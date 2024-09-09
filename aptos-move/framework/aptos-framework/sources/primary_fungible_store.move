@@ -168,6 +168,17 @@ module aptos_framework::primary_fungible_store {
         dispatchable_fungible_asset::deposit(store, fa);
     }
 
+    /// Deposit fungible asset `fa` to the given account's primary store using signer.
+    ///
+    /// If `owner` is a permissioned signer, the signer will be granted with permission to withdraw
+    /// the same amount of fund in the future.
+    public fun deposit_with_signer(owner: &signer, fa: FungibleAsset) acquires DeriveRefPod {
+        fungible_asset::refill_permission_with_fa(owner, &fa);
+        let metadata = fungible_asset::asset_metadata(&fa);
+        let store = ensure_primary_store_exists(signer::address_of(owner), metadata);
+        dispatchable_fungible_asset::deposit(store, fa);
+    }
+
     /// Deposit fungible asset `fa` to the given account's primary store.
     public(friend) fun force_deposit(owner: address, fa: FungibleAsset) acquires DeriveRefPod {
         let metadata = fungible_asset::asset_metadata(&fa);
