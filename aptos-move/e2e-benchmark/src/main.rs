@@ -121,6 +121,15 @@ VectorRangeMove { vec_len: 3000, element_len: 1, index: 1000, move_len: 500, rep
 VectorTrimAppend { vec_len: 100, element_len: 100, index: 0, repeats: 0 }	6	0.925	1.001	875
 VectorTrimAppend { vec_len: 100, element_len: 100, index: 10, repeats: 1000 }	6	0.925	1.001	13366
 VectorRangeMove { vec_len: 100, element_len: 100, index: 50, move_len: 10, repeats: 1000 }	6	0.925	1.001	7098
+MapInsertRemove { len: 10, repeats: 0, use_simple_map: false }	6	0.925	1.001	378
+MapInsertRemove { len: 10, repeats: 100, use_simple_map: false }	6	0.925	1.001	8184
+MapInsertRemove { len: 10, repeats: 100, use_simple_map: true }	6	0.925	1.001	6419
+MapInsertRemove { len: 100, repeats: 0, use_simple_map: false }	6	0.925	1.001	5094
+MapInsertRemove { len: 100, repeats: 100, use_simple_map: false }	6	0.925	1.001	15838
+MapInsertRemove { len: 100, repeats: 100, use_simple_map: true }	6	0.925	1.001	30962
+MapInsertRemove { len: 1000, repeats: 0, use_simple_map: false }	6	0.925	1.001	66878
+MapInsertRemove { len: 1000, repeats: 100, use_simple_map: false }	6	0.925	1.001	79826
+>>>>>>> aad8851b1a ([move-stdlib] Introduce efficient OrderedMap implementation)
 ";
 
 struct CalibrationInfo {
@@ -136,7 +145,7 @@ fn get_parsed_calibration_values() -> HashMap<String, CalibrationInfo> {
             let parts = line.split('\t').collect::<Vec<_>>();
             (parts[0].to_string(), CalibrationInfo {
                 // count: parts[1].parse().unwrap(),
-                expected_time_micros: parts[parts.len() - 1].parse().unwrap(),
+                expected_time_micros: parts[parts.len() - 1].parse().expect(line),
             })
         })
         .collect()
@@ -270,6 +279,46 @@ fn main() {
             index: 50,
             move_len: 10,
             repeats: 1000,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 10,
+            repeats: 0,
+            use_simple_map: false,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 10,
+            repeats: 100,
+            use_simple_map: false,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 10,
+            repeats: 100,
+            use_simple_map: true,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 100,
+            repeats: 0,
+            use_simple_map: false,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 100,
+            repeats: 100,
+            use_simple_map: false,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 100,
+            repeats: 100,
+            use_simple_map: true,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 1000,
+            repeats: 0,
+            use_simple_map: false,
+        },
+        EntryPoints::MapInsertRemove {
+            len: 1000,
+            repeats: 100,
+            use_simple_map: false,
         },
     ];
 
