@@ -20,6 +20,11 @@ crate::gas_schedule::macros::define_gas_parameters!(
         [account_create_address_base: InternalGas, "account.create_address.base", 1102],
         [account_create_signer_base: InternalGas, "account.create_signer.base", 1102],
 
+        // Permissioned signer gas parameters_
+        [permission_address_base: InternalGas, "permissioned_signer.permission_address.base", 1102],
+        [is_permissioned_signer_base: InternalGas, "permissioned_signer.is_permissioned_signer.base", 1102],
+        [signer_from_permissioned_handle_base: InternalGas, "permissioned_signer.signer_from_permissioned_handle.base", 1102],
+
         // BN254 algebra gas parameters begin.
         // Generated at time 1701559125.5498126 by `scripts/algebra-gas/update_bn254_algebra_gas_params.py` with gas_per_ns=209.10511688369482.
         [algebra_ark_bn254_fq12_add: InternalGas, { 12.. => "algebra.ark_bn254_fq12_add" }, 809],
