@@ -7,7 +7,7 @@ use aptos_language_e2e_tests::{
 };
 use aptos_transaction_generator_lib::{
     publishing::{
-        module_simple::{AutomaticArgs, LoopType, MultiSigConfig},
+        module_simple::{AutomaticArgs, LoopType, MapType, MultiSigConfig},
         publish_util::{Package, PackageHandler},
     },
     EntryPoints,
@@ -121,14 +121,14 @@ VectorRangeMove { vec_len: 3000, element_len: 1, index: 1000, move_len: 500, rep
 VectorTrimAppend { vec_len: 100, element_len: 100, index: 0, repeats: 0 }	6	0.925	1.001	875
 VectorTrimAppend { vec_len: 100, element_len: 100, index: 10, repeats: 1000 }	6	0.925	1.001	13366
 VectorRangeMove { vec_len: 100, element_len: 100, index: 50, move_len: 10, repeats: 1000 }	6	0.925	1.001	7098
-MapInsertRemove { len: 10, repeats: 0, use_simple_map: false }	6	0.925	1.001	378
-MapInsertRemove { len: 10, repeats: 100, use_simple_map: false }	6	0.925	1.001	8184
-MapInsertRemove { len: 10, repeats: 100, use_simple_map: true }	6	0.925	1.001	6419
-MapInsertRemove { len: 100, repeats: 0, use_simple_map: false }	6	0.925	1.001	5094
-MapInsertRemove { len: 100, repeats: 100, use_simple_map: false }	6	0.925	1.001	15838
-MapInsertRemove { len: 100, repeats: 100, use_simple_map: true }	6	0.925	1.001	30962
-MapInsertRemove { len: 1000, repeats: 0, use_simple_map: false }	6	0.925	1.001	66878
-MapInsertRemove { len: 1000, repeats: 100, use_simple_map: false }	6	0.925	1.001	79826
+MapInsertRemove { len: 10, repeats: 0, map_type: OrderedMap }	6	0.925	1.001	378
+MapInsertRemove { len: 10, repeats: 100, map_type: OrderedMap }	6	0.925	1.001	8184
+MapInsertRemove { len: 10, repeats: 100, map_type: SimpleMap }	6	0.925	1.001	6419
+MapInsertRemove { len: 100, repeats: 0, map_type: OrderedMap }	6	0.925	1.001	5094
+MapInsertRemove { len: 100, repeats: 100, map_type: OrderedMap }	6	0.925	1.001	15838
+MapInsertRemove { len: 100, repeats: 100, map_type: SimpleMap }	6	0.925	1.001	30962
+MapInsertRemove { len: 1000, repeats: 0, map_type: OrderedMap }	6	0.925	1.001	66878
+MapInsertRemove { len: 1000, repeats: 100, map_type: OrderedMap }	6	0.925	1.001	79826
 ";
 
 struct CalibrationInfo {
@@ -282,42 +282,42 @@ fn main() {
         EntryPoints::MapInsertRemove {
             len: 10,
             repeats: 0,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
         EntryPoints::MapInsertRemove {
             len: 10,
             repeats: 100,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
         EntryPoints::MapInsertRemove {
             len: 10,
             repeats: 100,
-            use_simple_map: true,
+            map_type: MapType::SimpleMap,
         },
         EntryPoints::MapInsertRemove {
             len: 100,
             repeats: 0,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
         EntryPoints::MapInsertRemove {
             len: 100,
             repeats: 100,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
         EntryPoints::MapInsertRemove {
             len: 100,
             repeats: 100,
-            use_simple_map: true,
+            map_type: MapType::SimpleMap,
         },
         EntryPoints::MapInsertRemove {
             len: 1000,
             repeats: 0,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
         EntryPoints::MapInsertRemove {
             len: 1000,
             repeats: 100,
-            use_simple_map: false,
+            map_type: MapType::OrderedMap,
         },
     ];
 
