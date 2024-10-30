@@ -275,6 +275,7 @@ impl WorkflowTxnGeneratorCreator {
             WorkflowKind::CreateMintBurn {
                 count,
                 creation_balance,
+                replay_protection,
             } => {
                 let created_pool = Arc::new(ObjectPool::new());
                 let minted_pool = Arc::new(ObjectPool::new());
@@ -329,6 +330,7 @@ impl WorkflowTxnGeneratorCreator {
                             txn_factory.clone(),
                             packages.clone(),
                             mint_worker,
+                            replay_protection,
                         )),
                         created_pool.clone(),
                         Some(minted_pool.clone()),
@@ -338,6 +340,7 @@ impl WorkflowTxnGeneratorCreator {
                             txn_factory.clone(),
                             packages.clone(),
                             burn_worker,
+                            replay_protection,
                         )),
                         minted_pool.clone(),
                         Some(burnt_pool.clone()),

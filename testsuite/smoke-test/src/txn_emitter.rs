@@ -8,8 +8,7 @@ use crate::{
 };
 use anyhow::ensure;
 use aptos_forge::{
-    args::TransactionTypeArg, emitter::NumAccountsMode, AccountType, EmitJobMode, EmitJobRequest,
-    EntryPoints, NodeExt, Result, Swarm, TransactionType, TxnEmitter, TxnStats, WorkflowProgress,
+    args::TransactionTypeArg, emitter::NumAccountsMode, AccountType, EmitJobMode, EmitJobRequest, EntryPoints, NodeExt, ReplayProtectionType, Result, Swarm, TransactionType, TxnEmitter, TxnStats, WorkflowProgress
 };
 use aptos_sdk::{transaction_builder::TransactionFactory, types::PeerId};
 use aptos_types::keyless::test_utils::{get_sample_esk, get_sample_exp_date, get_sample_jwt_token};
@@ -152,6 +151,7 @@ static TRANSACTION_MIX_PER_PHASE: Lazy<Vec<Vec<(TransactionType, usize)>>> = Laz
                     },
                     num_modules: 1,
                     use_account_pool: false,
+                    replay_protection: ReplayProtectionType::SequenceNumber,
                 },
                 20,
             ),
@@ -240,6 +240,7 @@ async fn test_txn_emmitter_with_high_pending_latency() {
                 },
                 num_modules: 1,
                 use_account_pool: false,
+                replay_protection: ReplayProtectionType::SequenceNumber,
             },
             1,
         )]],
@@ -258,6 +259,7 @@ async fn test_txn_emmitter_low_funds() {
         entry_point: EntryPoints::Nop,
         num_modules: 1,
         use_account_pool: false,
+        replay_protection: ReplayProtectionType::SequenceNumber,
     };
 
     let rng = SeedableRng::from_rng(OsRng).unwrap();

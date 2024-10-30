@@ -55,34 +55,46 @@ pub use publishing::module_simple::EntryPoints;
 pub const SEND_AMOUNT: u64 = 1;
 
 #[derive(Debug, Copy, Clone)]
+pub enum ReplayProtectionType {
+    SequenceNumber,
+    Nonce,
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum TransactionType {
     CoinTransfer {
         invalid_transaction_ratio: usize,
         sender_use_account_pool: bool,
         non_conflicting: bool,
         use_fa_transfer: bool,
+        replay_protection: ReplayProtectionType,
     },
     AccountGeneration {
         add_created_accounts_to_pool: bool,
         max_account_working_set: usize,
         creation_balance: u64,
+        replay_protection: ReplayProtectionType,
     },
     PublishPackage {
         use_account_pool: bool,
+        replay_protection: ReplayProtectionType,
     },
     CallCustomModules {
         entry_point: EntryPoints,
         num_modules: usize,
         use_account_pool: bool,
+        replay_protection: ReplayProtectionType,
     },
     BatchTransfer {
         batch_size: usize,
+        replay_protection: ReplayProtectionType,
     },
     Workflow {
         workflow_kind: WorkflowKind,
         num_modules: usize,
         use_account_pool: bool,
         progress_type: WorkflowProgress,
+        replay_protection: ReplayProtectionType,
     },
 }
 
@@ -95,7 +107,11 @@ pub enum AccountType {
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorkflowKind {
-    CreateMintBurn { count: usize, creation_balance: u64 },
+    CreateMintBurn { 
+        count: usize, 
+        creation_balance: u64,
+        replay_protection: ReplayProtectionType,
+    },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -114,7 +130,7 @@ impl WorkflowProgress {
 
 impl Default for TransactionType {
     fn default() -> Self {
-        TransactionTypeArg::CoinTransfer.materialize_default()
+        TransactionTypeArg::CoinTransferOrderless.materialize_default()
     }
 }
 
@@ -286,6 +302,7 @@ pub async fn create_txn_generator_creator(
                     sender_use_account_pool,
                     non_conflicting,
                     use_fa_transfer,
+                    replay_protection,
                 } => wrap_accounts_pool(
                     Box::new(P2PTransactionGeneratorCreator::new(
                         txn_factory.clone(),
@@ -298,6 +315,7 @@ pub async fn create_txn_generator_creator(
                         } else {
                             SamplingMode::Basic
                         },
+                        *replay_protection,
                     )),
                     *sender_use_account_pool,
                     &accounts_pool,
@@ -306,6 +324,7 @@ pub async fn create_txn_generator_creator(
                     add_created_accounts_to_pool,
                     max_account_working_set,
                     creation_balance,
+                    replay_protection,
                 } => Box::new(AccountGeneratorCreator::new(
                     txn_factory.clone(),
                     add_created_accounts_to_pool.then(|| {
@@ -319,7 +338,7 @@ pub async fn create_txn_generator_creator(
                     *max_account_working_set,
                     *creation_balance,
                 )),
-                TransactionType::PublishPackage { use_account_pool } => wrap_accounts_pool(
+                TransactionType::PublishPackage { use_account_pool, replay_protection } => wrap_accounts_pool(
                     Box::new(PublishPackageCreator::new(txn_factory.clone())),
                     *use_account_pool,
                     &accounts_pool,
@@ -328,6 +347,7 @@ pub async fn create_txn_generator_creator(
                     entry_point,
                     num_modules,
                     use_account_pool,
+                    replay_protection,
                 } => wrap_accounts_pool(
                     Box::new(
                         CustomModulesDelegationGeneratorCreator::new(
@@ -340,13 +360,14 @@ pub async fn create_txn_generator_creator(
                             &mut EntryPointTransactionGenerator {
                                 entry_point: *entry_point,
                             },
+                            *replay_protection,
                         )
                         .await,
                     ),
                     *use_account_pool,
                     &accounts_pool,
                 ),
-                TransactionType::BatchTransfer { batch_size } => {
+                TransactionType::BatchTransfer { batch_size, replay_protection } => {
                     Box::new(BatchTransferTransactionGeneratorCreator::new(
                         txn_factory.clone(),
                         SEND_AMOUNT,
@@ -359,6 +380,7 @@ pub async fn create_txn_generator_creator(
                     use_account_pool,
                     workflow_kind,
                     progress_type,
+                    replay_protection,
                 } => Box::new(
                     WorkflowTxnGeneratorCreator::create_workload(
                         *workflow_kind,

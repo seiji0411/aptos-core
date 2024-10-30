@@ -17,7 +17,7 @@
 #![allow(clippy::get_first)]
 use aptos_types::{
     account_address::AccountAddress,
-    transaction::{EntryFunction, TransactionPayload},
+    transaction::{EntryFunction, TransactionExecutable, TransactionExtraConfig, TransactionPayload, TransactionPayloadV2},
 };
 use move_core_types::{
     ident_str,
@@ -2165,6 +2165,27 @@ pub fn aptos_account_fungible_transfer_only(to: AccountAddress, amount: u64) -> 
     ))
 }
 
+pub fn aptos_account_fungible_transfer_only_v2(to: AccountAddress, amount: u64, replay_protection_nonce: Option<u64>) -> TransactionPayload {
+    TransactionPayload::V2(TransactionPayloadV2::V1{
+        executable: TransactionExecutable::EntryFunction(EntryFunction::new(
+            ModuleId::new(
+                AccountAddress::new([
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 1,
+                ]),
+                ident_str!("aptos_account").to_owned(),
+            ),
+            ident_str!("fungible_transfer_only").to_owned(),
+            vec![],
+            vec![bcs::to_bytes(&to).unwrap(), bcs::to_bytes(&amount).unwrap()],
+        )),
+        extra_config: TransactionExtraConfig::V1 {
+            replay_protection_nonce,
+            multisig_address: None,
+        }
+    })
+}
+
 /// Set whether `account` can receive direct transfers of coins that they have not explicitly registered to receive.
 pub fn aptos_account_set_allow_direct_coin_transfers(allow: bool) -> TransactionPayload {
     TransactionPayload::EntryFunction(EntryFunction::new(
@@ -2592,6 +2613,27 @@ pub fn coin_transfer(coin_type: TypeTag, to: AccountAddress, amount: u64) -> Tra
         vec![coin_type],
         vec![bcs::to_bytes(&to).unwrap(), bcs::to_bytes(&amount).unwrap()],
     ))
+}
+
+pub fn coin_transfer_v2(coin_type: TypeTag, to: AccountAddress, amount: u64, replay_protection_nonce: Option<u64>) -> TransactionPayload {
+    TransactionPayload::V2(TransactionPayloadV2::V1 {
+        executable: TransactionExecutable::EntryFunction(EntryFunction::new(
+            ModuleId::new(
+                AccountAddress::new([
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 1,
+                ]),
+                ident_str!("coin").to_owned(),
+            ),
+            ident_str!("transfer").to_owned(),
+            vec![coin_type],
+            vec![bcs::to_bytes(&to).unwrap(), bcs::to_bytes(&amount).unwrap()],
+        )),
+        extra_config: TransactionExtraConfig::V1 {
+            replay_protection_nonce,
+            multisig_address: None,
+        }
+    })
 }
 
 /// Upgrade total supply to use a parallelizable implementation if it is

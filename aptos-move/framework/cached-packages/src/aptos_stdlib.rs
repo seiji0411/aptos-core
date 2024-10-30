@@ -20,6 +20,10 @@ pub fn aptos_coin_transfer(to: AccountAddress, amount: u64) -> TransactionPayloa
     coin_transfer(AptosCoinType::type_tag(), to, amount)
 }
 
+pub fn aptos_coin_transfer_v2(to: AccountAddress, amount: u64, nonce: Option<u64>) -> TransactionPayload {
+    coin_transfer_v2(AptosCoinType::type_tag(), to, amount, nonce)
+}
+
 pub fn publish_module_source(module_name: &str, module_src: &str) -> TransactionPayload {
     let mut builder = PackageBuilder::new("tmp");
     builder.add_source(module_name, module_src);
