@@ -519,11 +519,11 @@ impl<'a> AptosTestAdapter<'a> {
         let txn_block = vec![txn];
         let sig_verified_block = into_signature_verified_block(txn_block);
         let txn_provider = Arc::new(DefaultTxnProvider::new(sig_verified_block));
-        let onchain_config = BlockExecutorConfigFromOnchain {
+        let onchain_config = BlockExecutorConfigFromOnchain::new(
             // TODO fetch values from state?
             // Or should we just use execute_block_no_limit ?
-            block_gas_limit_type: BlockGasLimitType::Limit(30000),
-        };
+            BlockGasLimitType::Limit(30000),
+        );
         let (mut outputs, _) =
             AptosVM::execute_block(txn_provider, &self.storage.clone(), onchain_config)?
                 .into_inner();
