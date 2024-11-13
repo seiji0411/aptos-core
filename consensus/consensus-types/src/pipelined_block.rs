@@ -67,8 +67,6 @@ pub struct PipelinedBlock {
     block: Block,
     /// A window of blocks that are needed for execution with the execution pool, excluding the current block
     block_window: OrderedBlockWindow,
-    /// Input transactions in the order of execution
-    input_transactions: Vec<SignedTransaction>,
     /// The state_compute_result is calculated for all the pending blocks prior to insertion to
     /// the tree. The execution results are not persisted: they're recalculated again for the
     /// pending blocks upon restart.
@@ -93,14 +91,15 @@ impl Serialize for PipelinedBlock {
         struct SerializedBlock<'a> {
             block: &'a Block,
             block_window: &'a OrderedBlockWindow,
-            input_transactions: &'a Vec<SignedTransaction>,
+            // Removed, keeping for backwards compatibility
+            _input_transactions: &'a Vec<SignedTransaction>,
             randomness: Option<&'a Randomness>,
         }
 
         let serialized = SerializedBlock {
             block: &self.block,
             block_window: &self.block_window,
-            input_transactions: &self.input_transactions,
+            _input_transactions: &vec![],
             randomness: self.randomness.get(),
         };
         serialized.serialize(serializer)
@@ -117,14 +116,15 @@ impl<'de> Deserialize<'de> for PipelinedBlock {
         struct SerializedBlock {
             block: Block,
             block_window: OrderedBlockWindow,
-            input_transactions: Vec<SignedTransaction>,
+            // Removed, keeping for backwards compatibility
+            _input_transactions: Vec<SignedTransaction>,
             randomness: Option<Randomness>,
         }
 
         let SerializedBlock {
             block,
             block_window,
-            input_transactions,
+            _input_transactions: _,
             randomness,
         } = SerializedBlock::deserialize(deserializer)?;
 
@@ -137,7 +137,6 @@ impl<'de> Deserialize<'de> for PipelinedBlock {
         let block = PipelinedBlock {
             block,
             block_window,
-            input_transactions,
             state_compute_result: StateComputeResult::new_dummy(),
             randomness: OnceCell::new(),
             pipeline_insertion_time: OnceCell::new(),
@@ -158,14 +157,13 @@ impl PipelinedBlock {
         pipeline_execution_result: PipelineExecutionResult,
     ) -> Self {
         let PipelineExecutionResult {
-            input_txns,
+            input_txns: _,
             result,
             execution_time,
             pre_commit_fut,
         } = pipeline_execution_result;
 
         self.state_compute_result = result;
-        self.input_transactions = input_txns;
         self.pre_commit_fut = Arc::new(Mutex::new(Some(pre_commit_fut)));
 
         let mut to_commit = 0;
@@ -252,11 +250,7 @@ impl Display for PipelinedBlock {
 }
 
 impl PipelinedBlock {
-    pub fn new(
-        block: Block,
-        input_transactions: Vec<SignedTransaction>,
-        state_compute_result: StateComputeResult,
-    ) -> Self {
+    pub fn new(block: Block, state_compute_result: StateComputeResult) -> Self {
         info!(
             "New PipelinedBlock with block_id: {}, parent_id: {}, round: {}, epoch: {}, txns: {}",
             block.id(),
@@ -269,7 +263,6 @@ impl PipelinedBlock {
         Self {
             block,
             block_window: OrderedBlockWindow::new(vec![]),
-            input_transactions,
             state_compute_result,
             randomness: OnceCell::new(),
             pipeline_insertion_time: OnceCell::new(),
@@ -291,7 +284,6 @@ impl PipelinedBlock {
         Self {
             block,
             block_window: window,
-            input_transactions: vec![],
             state_compute_result: StateComputeResult::new_dummy(),
             randomness: OnceCell::new(),
             pipeline_insertion_time: OnceCell::new(),
@@ -314,7 +306,6 @@ impl PipelinedBlock {
         Self {
             block,
             block_window: OrderedBlockWindow::empty(),
-            input_transactions: vec![],
             state_compute_result: StateComputeResult::new_dummy(),
             randomness: OnceCell::new(),
             pipeline_insertion_time: OnceCell::new(),
@@ -337,10 +328,6 @@ impl PipelinedBlock {
 
     pub fn id(&self) -> HashValue {
         self.block().id()
-    }
-
-    pub fn input_transactions(&self) -> &Vec<SignedTransaction> {
-        &self.input_transactions
     }
 
     pub fn epoch(&self) -> u64 {
