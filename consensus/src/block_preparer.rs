@@ -138,10 +138,11 @@ impl BlockPreparer {
 
         // TODO: lots of repeated code here
         monitor!("wait_for_committed_transactions", {
+            let num_blocks_in_window = block_window.pipelined_blocks().len();
             for b in block_window
                 .pipelined_blocks()
                 .iter()
-                .filter(|window_block| window_block.round() < block.round() - 1)
+                .take(num_blocks_in_window.saturating_sub(1))
             {
                 info!(
                     "BlockPreparer: Waiting for committed transactions at block {} for block {}",
