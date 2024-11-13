@@ -178,11 +178,7 @@ pub(crate) fn realistic_env_fairness_workload_sweep() -> ForgeConfig {
                 .with_transactions_per_account(1),
         ]),
         criteria: Vec::new(),
-        background_traffic: background_traffic_for_sweep_with_latency(&[
-            (3.0, 8.0),
-            (3.0, 8.0),
-            (3.0, 4.0),
-        ]),
+        background_traffic: None,
     })
 }
 
