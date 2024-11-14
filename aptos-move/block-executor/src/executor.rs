@@ -828,10 +828,11 @@ where
                     final_results,
                 )?;
             }
+            info!("OTHER drain_commit_queue done.");
             Ok(())
         };
 
-        loop {
+        let ret = loop {
             if let SchedulerTask::ValidationTask(txn_idx, incarnation, _) = &scheduler_task {
                 if *incarnation as usize > num_workers.pow(2) + num_txns + 10 {
                     // Something is wrong if we observe high incarnations (e.g. a bug
@@ -912,11 +913,14 @@ where
                 },
                 SchedulerTask::Retry => scheduler.next_task(),
                 SchedulerTask::Done => {
+                    info!("OTHER Done done.");
                     drain_commit_queue()?;
                     break Ok(());
                 },
             }
-        }
+        };
+        info!("OTHER loop done.");
+        ret
     }
 
     pub(crate) fn execute_transactions_parallel(
@@ -1012,6 +1016,7 @@ where
 
         // Explicit async drops.
         DEFAULT_DROPPER.schedule_drop((last_input_output, scheduler, versioned_cache));
+        info!("OTHER schedule_drop end.");
 
         let block_end_info = if self
             .config
@@ -1024,9 +1029,12 @@ where
             None
         };
 
-        (!shared_maybe_error.load(Ordering::SeqCst))
+        let timer = std::time::Instant::now();
+        let ret = (!shared_maybe_error.load(Ordering::SeqCst))
             .then(|| BlockOutput::new(final_results.into_inner(), block_end_info))
-            .ok_or(())
+            .ok_or(());
+        info!("OTHER block_output end. {} ms", timer.elapsed().as_millis());
+        ret
     }
 
     fn apply_output_sequential(
@@ -1464,6 +1472,7 @@ where
 
             info!("parallel execution requiring fallback");
         }
+        info!("OTHER execute_transactions_parallel end.");
 
         // If we didn't run parallel, or it didn't finish successfully - run sequential
         let sequential_result = self.execute_transactions_sequential(
@@ -1472,6 +1481,7 @@ where
             base_view,
             false,
         );
+        info!("OTHER execute_transactions_sequential end.");
 
         // If sequential gave us result, return it
         let sequential_error = match sequential_result {
@@ -1511,6 +1521,7 @@ where
             },
             Err(SequentialBlockExecutionError::ErrorToReturn(err)) => err,
         };
+        info!("OTHER sequential_result end.");
 
         if self.config.local.discard_failed_blocks {
             // We cannot execute block, discard everything (including block metadata and validator transactions)
@@ -1529,6 +1540,7 @@ where
                 .collect();
             return Ok(BlockOutput::new(ret, self.empty_block_end_info()));
         }
+        info!("OTHER discard_failed_blocks end.");
 
         Err(sequential_error)
     }

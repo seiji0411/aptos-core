@@ -267,6 +267,7 @@ where
                         Some(block_id),
                     )?
                 };
+                info!("OTHER execute_transaction_block end. {}", block_id);
 
                 let _timer = OTHER_TIMERS.timer_with(&["state_checkpoint"]);
 

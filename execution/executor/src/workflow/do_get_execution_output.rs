@@ -100,9 +100,12 @@ impl DoGetExecutionOutput {
     ) -> Result<ExecutionOutput> {
         let block_output =
             Self::execute_block::<V>(txn_provider.clone(), &state_view, onchain_config)?;
+        let block_output_into_inner_timer = OTHER_TIMERS.timer_with(&["block_output_into_inner"]);
         let (transaction_outputs, block_end_info) = block_output.into_inner();
+        block_output_into_inner_timer.observe_duration();
 
-        Parser::parse(
+        let parse_result_timer = OTHER_TIMERS.timer_with(&["parse_result"]);
+        let result = Parser::parse(
             state_view.next_version(),
             txn_provider
                 .to_vec()
@@ -113,7 +116,11 @@ impl DoGetExecutionOutput {
             state_view.into_state_cache(),
             block_end_info,
             append_state_checkpoint_to_block,
-        )
+        );
+        parse_result_timer.observe_duration();
+        info!("OTHER parse_result end.");
+
+        result
     }
 
     pub fn by_transaction_execution_sharded<V: VMExecutor>(
