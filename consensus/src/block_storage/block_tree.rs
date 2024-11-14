@@ -442,6 +442,7 @@ impl BlockTree {
         info!("blocks_to_be_pruned: {:?}", blocks_to_be_pruned);
         while let Some(block_to_remove) = blocks_to_be_pruned.pop() {
             info!("block_to_remove: {:?}", block_to_remove);
+            block_to_remove.executed_block.block_window().clear();
             // Add the children to the blocks to be pruned (if any), but stop when it reaches the
             // new root
             for child_id in block_to_remove.children() {

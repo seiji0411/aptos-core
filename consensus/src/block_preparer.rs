@@ -54,6 +54,7 @@ impl BlockPreparer {
         Option<u64>,
         Option<u64>,
     )> {
+        let window_blocks = block_window.pipelined_blocks();
         let mut txns = vec![];
         let mut futures = FuturesOrdered::new();
         info!(
@@ -61,8 +62,7 @@ impl BlockPreparer {
             block.epoch(),
             block.round()
         );
-        for block in block_window
-            .pipelined_blocks()
+        for block in window_blocks
             .iter()
             .map(|b| b.block())
             .chain(std::iter::once(block))

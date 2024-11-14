@@ -33,27 +33,45 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct OrderedBlockWindow {
-    blocks: Vec<Arc<PipelinedBlock>>,
+    blocks: Arc<Mutex<Option<Vec<Arc<PipelinedBlock>>>>>,
 }
 
 impl OrderedBlockWindow {
     pub fn new(blocks: Vec<Arc<PipelinedBlock>>) -> Self {
-        Self { blocks }
+        Self {
+            blocks: Arc::new(Mutex::new(Some(blocks))),
+        }
     }
 
     pub fn empty() -> Self {
-        Self { blocks: vec![] }
+        Self {
+            blocks: Arc::new(Mutex::new(Some(vec![]))),
+        }
+    }
+
+    pub fn clear(&self) {
+        *self.blocks.lock() = None;
     }
 
     // TODO: clone required?
     pub fn blocks(&self) -> Vec<Block> {
-        self.blocks.iter().map(|b| b.block().clone()).collect()
+        self.blocks
+            .lock()
+            .as_ref()
+            .expect("window already cleared")
+            .iter()
+            .map(|b| b.block().clone())
+            .collect()
     }
 
-    pub fn pipelined_blocks(&self) -> &Vec<Arc<PipelinedBlock>> {
-        &self.blocks
+    pub fn pipelined_blocks(&self) -> Vec<Arc<PipelinedBlock>> {
+        self.blocks
+            .lock()
+            .as_ref()
+            .expect("window already cleared")
+            .clone()
     }
 }
 
@@ -66,6 +84,7 @@ pub struct PipelinedBlock {
     /// Block data that cannot be regenerated.
     block: Block,
     /// A window of blocks that are needed for execution with the execution pool, excluding the current block
+    #[derivative(PartialEq = "ignore")]
     block_window: OrderedBlockWindow,
     /// The state_compute_result is calculated for all the pending blocks prior to insertion to
     /// the tree. The execution results are not persisted: they're recalculated again for the
@@ -90,7 +109,6 @@ impl Serialize for PipelinedBlock {
         #[serde(rename = "PipelineBlock")]
         struct SerializedBlock<'a> {
             block: &'a Block,
-            block_window: &'a OrderedBlockWindow,
             // Removed, keeping for backwards compatibility
             _input_transactions: &'a Vec<SignedTransaction>,
             randomness: Option<&'a Randomness>,
@@ -98,7 +116,6 @@ impl Serialize for PipelinedBlock {
 
         let serialized = SerializedBlock {
             block: &self.block,
-            block_window: &self.block_window,
             _input_transactions: &vec![],
             randomness: self.randomness.get(),
         };
@@ -115,7 +132,6 @@ impl<'de> Deserialize<'de> for PipelinedBlock {
         #[serde(rename = "PipelineBlock")]
         struct SerializedBlock {
             block: Block,
-            block_window: OrderedBlockWindow,
             // Removed, keeping for backwards compatibility
             _input_transactions: Vec<SignedTransaction>,
             randomness: Option<Randomness>,
@@ -123,7 +139,6 @@ impl<'de> Deserialize<'de> for PipelinedBlock {
 
         let SerializedBlock {
             block,
-            block_window,
             _input_transactions: _,
             randomness,
         } = SerializedBlock::deserialize(deserializer)?;
@@ -136,7 +151,7 @@ impl<'de> Deserialize<'de> for PipelinedBlock {
         );
         let block = PipelinedBlock {
             block,
-            block_window,
+            block_window: OrderedBlockWindow::empty(),
             state_compute_result: StateComputeResult::new_dummy(),
             randomness: OnceCell::new(),
             pipeline_insertion_time: OnceCell::new(),
