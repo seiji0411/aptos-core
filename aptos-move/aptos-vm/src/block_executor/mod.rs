@@ -6,7 +6,7 @@ pub(crate) mod vm_wrapper;
 
 use crate::{
     block_executor::vm_wrapper::AptosExecutorTask,
-    counters::{BLOCK_EXECUTOR_CONCURRENCY, BLOCK_EXECUTOR_EXECUTE_BLOCK_SECONDS, OTHER_TIMERS},
+    counters::{BLOCK_EXECUTOR_CONCURRENCY, BLOCK_EXECUTOR_EXECUTE_BLOCK_SECONDS},
 };
 use aptos_aggregator::{
     delayed_change::DelayedChange, delta_change_set::DeltaOp, resolver::TAggregatorV1View,
@@ -17,7 +17,6 @@ use aptos_block_executor::{
     txn_commit_hook::TransactionCommitHook, types::InputOutputKey,
 };
 use aptos_infallible::Mutex;
-use aptos_metrics_core::TimerHelper;
 use aptos_types::{
     block_executor::config::BlockExecutorConfig,
     contract_event::ContractEvent,
@@ -423,10 +422,7 @@ impl BlockAptosVM {
         let environment =
             Arc::new(Environment::new(state_view).try_enable_delayed_field_optimization());
         let ret = executor.execute_block(environment, signature_verified_block, state_view);
-        aptos_logger::info!("OTHER execute_block end.");
-
-        let make_ret_timer = OTHER_TIMERS.timer_with(&["make_ret"]);
-        let ret = match ret {
+        match ret {
             Ok(block_output) => {
                 let (transaction_outputs, block_end_info) = block_output.into_inner();
                 let output_vec: Vec<_> = transaction_outputs
@@ -453,10 +449,7 @@ impl BlockAptosVM {
                 message: Some(err_msg),
             }),
             Err(BlockExecutionError::FatalVMError(err)) => Err(err),
-        };
-        make_ret_timer.observe_duration();
-        aptos_logger::info!("OTHER make_ret end.");
-        ret
+        }
     }
 
     /// Uses shared thread pool to execute blocks.
