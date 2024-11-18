@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    publishing::module_simple::LoopType, EntryPoints, ReplayProtectionType, TransactionType, WorkflowKind, WorkflowProgress
+    publishing::module_simple::LoopType, EntryPoints, ReplayProtectionType, TransactionType,
+    WorkflowKind, WorkflowProgress,
 };
 use clap::{Parser, ValueEnum};
 use serde::{Deserialize, Serialize};
@@ -89,7 +90,9 @@ impl TransactionTypeArg {
         sender_use_account_pool: bool,
         workflow_progress_type: WorkflowProgress,
     ) -> TransactionType {
-        let call_custom_module = |entry_point: EntryPoints, replay_protection: ReplayProtectionType| -> TransactionType {
+        let call_custom_module = |entry_point: EntryPoints,
+                                  replay_protection: ReplayProtectionType|
+         -> TransactionType {
             TransactionType::CallCustomModules {
                 entry_point,
                 num_modules: module_working_set_size,
@@ -141,12 +144,14 @@ impl TransactionTypeArg {
                 use_fa_transfer: true,
                 replay_protection: ReplayProtectionType::Nonce,
             },
-            TransactionTypeArg::NonConflictingCoinTransferOrderless => TransactionType::CoinTransfer {
-                invalid_transaction_ratio: 0,
-                sender_use_account_pool,
-                non_conflicting: true,
-                use_fa_transfer: false,
-                replay_protection: ReplayProtectionType::Nonce,
+            TransactionTypeArg::NonConflictingCoinTransferOrderless => {
+                TransactionType::CoinTransfer {
+                    invalid_transaction_ratio: 0,
+                    sender_use_account_pool,
+                    non_conflicting: true,
+                    use_fa_transfer: false,
+                    replay_protection: ReplayProtectionType::Nonce,
+                }
             },
             TransactionTypeArg::CoinTransferWithInvalidOrderless => TransactionType::CoinTransfer {
                 invalid_transaction_ratio: 10,
@@ -171,71 +176,65 @@ impl TransactionTypeArg {
                 use_account_pool: sender_use_account_pool,
                 replay_protection: ReplayProtectionType::SequenceNumber,
             },
-            TransactionTypeArg::Batch100Transfer => {
-                TransactionType::BatchTransfer { 
-                    batch_size: 100,  
-                    replay_protection: ReplayProtectionType::SequenceNumber,
-                }
+            TransactionTypeArg::Batch100Transfer => TransactionType::BatchTransfer {
+                batch_size: 100,
+                replay_protection: ReplayProtectionType::SequenceNumber,
             },
-            TransactionTypeArg::AccountResource32B => {
-                call_custom_module(
-                    EntryPoints::BytesMakeOrChange {
-                        data_length: Some(32),
-                    }, 
-                    ReplayProtectionType::SequenceNumber,
-                )
-            },
-            TransactionTypeArg::AccountResource1KB => {
-                call_custom_module(
-                    EntryPoints::BytesMakeOrChange {
-                        data_length: Some(1024),
-                    },
-                    ReplayProtectionType::SequenceNumber,
-                )
-            },
-            TransactionTypeArg::AccountResource10KB => {
-                call_custom_module(
-                    EntryPoints::BytesMakeOrChange {
-                        data_length: Some(10 * 1024),
-                    },
-                    ReplayProtectionType::SequenceNumber,
-                )
-            },
-            TransactionTypeArg::ModifyGlobalResource => call_custom_module(
-                EntryPoints::IncGlobal,
+            TransactionTypeArg::AccountResource32B => call_custom_module(
+                EntryPoints::BytesMakeOrChange {
+                    data_length: Some(32),
+                },
                 ReplayProtectionType::SequenceNumber,
             ),
-            TransactionTypeArg::ModifyGlobalResourceAggV2 => {
-                call_custom_module(
-                    EntryPoints::IncGlobalAggV2,
-                    ReplayProtectionType::SequenceNumber,
-                )
+            TransactionTypeArg::AccountResource1KB => call_custom_module(
+                EntryPoints::BytesMakeOrChange {
+                    data_length: Some(1024),
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::AccountResource10KB => call_custom_module(
+                EntryPoints::BytesMakeOrChange {
+                    data_length: Some(10 * 1024),
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::ModifyGlobalResource => {
+                call_custom_module(EntryPoints::IncGlobal, ReplayProtectionType::SequenceNumber)
             },
+            TransactionTypeArg::ModifyGlobalResourceAggV2 => call_custom_module(
+                EntryPoints::IncGlobalAggV2,
+                ReplayProtectionType::SequenceNumber,
+            ),
             TransactionTypeArg::ModifyGlobalFlagAggV2 => call_custom_module(
                 // 100 is max, so equivalent to flag
                 EntryPoints::ModifyGlobalBoundedAggV2 { step: 100 },
                 ReplayProtectionType::SequenceNumber,
             ),
-            TransactionTypeArg::ModifyGlobalBoundedAggV2 => {
-                call_custom_module(
-                    EntryPoints::ModifyGlobalBoundedAggV2 { step: 10 },
-                    ReplayProtectionType::SequenceNumber,
-                )
+            TransactionTypeArg::ModifyGlobalBoundedAggV2 => call_custom_module(
+                EntryPoints::ModifyGlobalBoundedAggV2 { step: 10 },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::ModifyGlobalMilestoneAggV2 => call_custom_module(
+                EntryPoints::IncGlobalMilestoneAggV2 {
+                    milestone_every: 1000,
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::NoOp => {
+                call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber)
             },
-            TransactionTypeArg::ModifyGlobalMilestoneAggV2 => {
-                call_custom_module(
-                    EntryPoints::IncGlobalMilestoneAggV2 {
-                        milestone_every: 1000,
-                    },
-                    ReplayProtectionType::SequenceNumber,
-                )
+            TransactionTypeArg::NoOpFeePayer => call_custom_module(
+                EntryPoints::NopFeePayer,
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::NoOp2Signers => {
+                call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber)
             },
-            TransactionTypeArg::NoOp => call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber),
-            TransactionTypeArg::NoOpFeePayer => call_custom_module(EntryPoints::NopFeePayer, ReplayProtectionType::SequenceNumber),
-            TransactionTypeArg::NoOp2Signers => call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber),
-            TransactionTypeArg::NoOp5Signers => call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber),
+            TransactionTypeArg::NoOp5Signers => {
+                call_custom_module(EntryPoints::Nop, ReplayProtectionType::SequenceNumber)
+            },
             TransactionTypeArg::Loop100k => call_custom_module(
-                    EntryPoints::Loop {
+                EntryPoints::Loop {
                     loop_count: Some(100000),
                     loop_type: LoopType::NoOp,
                 },
@@ -361,7 +360,6 @@ impl TransactionTypeArg {
                 workflow_kind: WorkflowKind::CreateMintBurn {
                     count: 10000,
                     creation_balance: 200000,
-                    replay_protection: ReplayProtectionType::SequenceNumber,
                 },
                 num_modules: 1,
                 use_account_pool: sender_use_account_pool,
@@ -381,47 +379,61 @@ impl TransactionTypeArg {
                 ReplayProtectionType::SequenceNumber,
             ),
             TransactionTypeArg::VectorPicture30k => call_custom_module(
-                EntryPoints::VectorPicture { length: 30 * 1024 }, 
+                EntryPoints::VectorPicture { length: 30 * 1024 },
                 ReplayProtectionType::SequenceNumber,
             ),
-            TransactionTypeArg::VectorPictureRead30k => {
-                call_custom_module(EntryPoints::VectorPictureRead { length: 30 * 1024 }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::VectorPictureCreate40 => {
-                call_custom_module(EntryPoints::InitializeVectorPicture { length: 40 }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::VectorPicture40 => {
-                call_custom_module(EntryPoints::VectorPicture { length: 40 }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::VectorPictureRead40 => {
-                call_custom_module(EntryPoints::VectorPictureRead { length: 40 }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::SmartTablePicture30KWith200Change => {
-                call_custom_module(EntryPoints::SmartTablePicture {
+            TransactionTypeArg::VectorPictureRead30k => call_custom_module(
+                EntryPoints::VectorPictureRead { length: 30 * 1024 },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::VectorPictureCreate40 => call_custom_module(
+                EntryPoints::InitializeVectorPicture { length: 40 },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::VectorPicture40 => call_custom_module(
+                EntryPoints::VectorPicture { length: 40 },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::VectorPictureRead40 => call_custom_module(
+                EntryPoints::VectorPictureRead { length: 40 },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::SmartTablePicture30KWith200Change => call_custom_module(
+                EntryPoints::SmartTablePicture {
                     length: 30 * 1024,
                     num_points_per_txn: 200,
-                }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::SmartTablePicture1MWith256Change => {
-                call_custom_module(EntryPoints::SmartTablePicture {
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::SmartTablePicture1MWith256Change => call_custom_module(
+                EntryPoints::SmartTablePicture {
                     length: 1024 * 1024,
                     num_points_per_txn: 256,
-                }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::SmartTablePicture1BWith256Change => {
-                call_custom_module(EntryPoints::SmartTablePicture {
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::SmartTablePicture1BWith256Change => call_custom_module(
+                EntryPoints::SmartTablePicture {
                     length: 1024 * 1024 * 1024,
                     num_points_per_txn: 256,
-                }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::SmartTablePicture1MWith1KChangeExceedsLimit => {
-                call_custom_module(EntryPoints::SmartTablePicture {
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::SmartTablePicture1MWith1KChangeExceedsLimit => call_custom_module(
+                EntryPoints::SmartTablePicture {
                     length: 1024 * 1024,
                     num_points_per_txn: 1024,
-                }, ReplayProtectionType::SequenceNumber)
-            },
-            TransactionTypeArg::DeserializeU256 => call_custom_module(EntryPoints::DeserializeU256, ReplayProtectionType::SequenceNumber),
-            TransactionTypeArg::SimpleScript => call_custom_module(EntryPoints::SimpleScript, ReplayProtectionType::SequenceNumber),
+                },
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::DeserializeU256 => call_custom_module(
+                EntryPoints::DeserializeU256,
+                ReplayProtectionType::SequenceNumber,
+            ),
+            TransactionTypeArg::SimpleScript => call_custom_module(
+                EntryPoints::SimpleScript,
+                ReplayProtectionType::SequenceNumber,
+            ),
         }
     }
 

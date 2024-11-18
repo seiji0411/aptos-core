@@ -2,23 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use aptos_api_types::{
-    transaction::{TransactionExecutable, TransactionExtraConfig, TransactionExtraConfigV1, TransactionPayloadV2, TransactionPayloadV2V1, ValidatorTransaction as ApiValidatorTransactionEnum}, AccountSignature,
-    DeleteModule, DeleteResource, Ed25519Signature, EntryFunctionId, EntryFunctionPayload, Event,
-    GenesisPayload, MoveAbility, MoveFunction, MoveFunctionGenericTypeParam,
-    MoveFunctionVisibility, MoveModule, MoveModuleBytecode, MoveModuleId, MoveScriptBytecode,
-    MoveStruct, MoveStructField, MoveStructTag, MoveType, MultiEd25519Signature, MultiKeySignature,
-    MultisigPayload, MultisigTransactionPayload, PublicKey, ScriptPayload, Signature,
-    SingleKeySignature, Transaction, TransactionInfo, TransactionPayload, TransactionSignature,
-    WriteSet, WriteSetChange,
+    transaction::{
+        TransactionExecutable, TransactionExtraConfig, TransactionExtraConfigV1,
+        TransactionPayloadV2, TransactionPayloadV2V1,
+        ValidatorTransaction as ApiValidatorTransactionEnum,
+    },
+    AccountSignature, DeleteModule, DeleteResource, Ed25519Signature, EntryFunctionId,
+    EntryFunctionPayload, Event, GenesisPayload, MoveAbility, MoveFunction,
+    MoveFunctionGenericTypeParam, MoveFunctionVisibility, MoveModule, MoveModuleBytecode,
+    MoveModuleId, MoveScriptBytecode, MoveStruct, MoveStructField, MoveStructTag, MoveType,
+    MultiEd25519Signature, MultiKeySignature, MultisigPayload, MultisigTransactionPayload,
+    PublicKey, ScriptPayload, Signature, SingleKeySignature, Transaction, TransactionInfo,
+    TransactionPayload, TransactionSignature, WriteSet, WriteSetChange,
 };
 use aptos_bitvec::BitVec;
 use aptos_logger::warn;
 use aptos_protos::{
     transaction::v1::{
-        self as transaction, any_signature, validator_transaction::{self, observed_jwk_update::exported_provider_jw_ks::{
-            jwk::{JwkType, Rsa, UnsupportedJwk},
-            Jwk as ProtoJwk,
-        }}, Ed25519, Keyless, Secp256k1Ecdsa, TransactionSizeInfo, WebAuthn
+        self as transaction, any_signature,
+        validator_transaction::{
+            self,
+            observed_jwk_update::exported_provider_jw_ks::{
+                jwk::{JwkType, Rsa, UnsupportedJwk},
+                Jwk as ProtoJwk,
+            },
+        },
+        Ed25519, Keyless, Secp256k1Ecdsa, TransactionSizeInfo, WebAuthn,
     },
     util::timestamp,
 };
@@ -183,7 +192,10 @@ pub fn convert_transaction_payload(
 
         // Question:: If extra_config.multisig_address is Some(_), should we convert this to a MultisigPayload?
         // or should we use consider this as an EntryFunctionPayload, and use the multisig_address in extra_config?
-        TransactionPayload::V2(TransactionPayloadV2::V1(TransactionPayloadV2V1 { executable, extra_config})) => match executable {
+        TransactionPayload::V2(TransactionPayloadV2::V1(TransactionPayloadV2V1 {
+            executable,
+            extra_config,
+        })) => match executable {
             TransactionExecutable::EntryFunctionPayload(sfp) => transaction::TransactionPayload {
                 r#type: transaction::transaction_payload::Type::EntryFunctionPayload as i32,
                 payload: Some(
@@ -203,7 +215,7 @@ pub fn convert_transaction_payload(
             // Question: What should we do here? Should we introduce a new Empty payload type in protobuf?
             TransactionExecutable::Empty(_) => {
                 unimplemented!("Empty transaction payload is not yet supported")
-            }
+            },
         },
 
         // Deprecated.
@@ -520,17 +532,20 @@ pub fn convert_multisig_payload(
     }
 }
 
-pub fn convert_extra_config(extra_config: &TransactionExtraConfig) -> transaction::transaction_payload::ExtraConfig {
+pub fn convert_extra_config(
+    extra_config: &TransactionExtraConfig,
+) -> transaction::transaction_payload::ExtraConfig {
     match extra_config {
         TransactionExtraConfig::V1(TransactionExtraConfigV1 {
             multisig_address,
             replay_protection_nonce,
         }) => transaction::transaction_payload::ExtraConfig::ExtraConfigV1(
             transaction::ExtraConfigV1 {
-                multisig_address: multisig_address.map(|multisig_address| multisig_address.to_string()),
+                multisig_address: multisig_address
+                    .map(|multisig_address| multisig_address.to_string()),
                 replay_protection_nonce: *replay_protection_nonce,
             },
-        )
+        ),
     }
 }
 

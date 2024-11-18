@@ -1,11 +1,10 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+use super::TransactionExecutable;
 use crate::transaction::{user_transaction_context::MultisigPayload, EntryFunction};
 use move_core_types::{account_address::AccountAddress, vm_status::VMStatus};
 use serde::{Deserialize, Serialize};
-
-use super::TransactionExecutable;
 
 /// A multisig transaction that allows an owner of a multisig account to execute a pre-approved
 /// transaction as the multisig account.
@@ -39,7 +38,9 @@ impl Multisig {
     pub fn as_transaction_executable(&self) -> TransactionExecutable {
         // TODO: See how to avoid cloning the entry function here.
         match &self.transaction_payload {
-            Some(MultisigTransactionPayload::EntryFunction(entry)) => TransactionExecutable::EntryFunction(entry.clone()),
+            Some(MultisigTransactionPayload::EntryFunction(entry)) => {
+                TransactionExecutable::EntryFunction(entry.clone())
+            },
             None => TransactionExecutable::Empty,
         }
     }

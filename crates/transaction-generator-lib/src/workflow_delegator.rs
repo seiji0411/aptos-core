@@ -5,7 +5,7 @@ use crate::{
     account_generator::AccountGeneratorCreator, accounts_pool_wrapper::AccountsPoolWrapperCreator,
     call_custom_modules::CustomModulesDelegationGeneratorCreator,
     entry_points::EntryPointTransactionGenerator, EntryPoints, ObjectPool,
-    ReliableTransactionSubmitter, RootAccountHandle, TransactionGenerator,
+    ReliableTransactionSubmitter, ReplayProtectionType, RootAccountHandle, TransactionGenerator,
     TransactionGeneratorCreator, WorkflowKind, WorkflowProgress,
 };
 use aptos_logger::{info, sample, sample::SampleRate};
@@ -251,6 +251,7 @@ impl WorkflowTxnGeneratorCreator {
         _initial_account_pool: Option<Arc<ObjectPool<LocalAccount>>>,
         cur_phase: Arc<AtomicUsize>,
         progress_type: WorkflowProgress,
+        replay_protection: ReplayProtectionType,
     ) -> Self {
         assert_eq!(num_modules, 1, "Only one module is supported for now");
 
@@ -275,7 +276,6 @@ impl WorkflowTxnGeneratorCreator {
             WorkflowKind::CreateMintBurn {
                 count,
                 creation_balance,
-                replay_protection,
             } => {
                 let created_pool = Arc::new(ObjectPool::new());
                 let minted_pool = Arc::new(ObjectPool::new());

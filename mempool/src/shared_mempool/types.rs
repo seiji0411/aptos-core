@@ -313,7 +313,10 @@ impl MultiBucketTimelineIndexIds {
         }
     }
 
-    pub(crate) fn update(&mut self, start_end_pairs: HashMap<TimelineIndexIdentifier, (TimelineId, TimelineId)>) {
+    pub(crate) fn update(
+        &mut self,
+        start_end_pairs: HashMap<TimelineIndexIdentifier, (TimelineId, TimelineId)>,
+    ) {
         if self.id_per_bucket.len() != start_end_pairs.len() {
             return;
         }

@@ -6,8 +6,7 @@ use aptos_crypto::{hash::CryptoHash, HashValue};
 use aptos_crypto_derive::{BCSCryptoHash, CryptoHasher};
 use aptos_types::{
     block_metadata::BlockMetadata, block_metadata_ext::BlockMetadataExt,
-    validator_txn::ValidatorTransaction,
-    transaction::ReplayProtector,
+    transaction::ReplayProtector, validator_txn::ValidatorTransaction,
 };
 use move_core_types::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
@@ -78,20 +77,16 @@ pub enum SessionId {
 impl SessionId {
     pub fn txn_meta(txn_metadata: &TransactionMetadata) -> Self {
         match txn_metadata.replay_protector() {
-            ReplayProtector::SequenceNumber(sequence_number) => {
-                Self::Txn {
-                    sender: txn_metadata.sender,
-                    sequence_number,
-                    script_hash: txn_metadata.script_hash.clone(),
-                }
+            ReplayProtector::SequenceNumber(sequence_number) => Self::Txn {
+                sender: txn_metadata.sender,
+                sequence_number,
+                script_hash: txn_metadata.script_hash.clone(),
             },
-            ReplayProtector::Nonce(nonce) => {
-                Self::OrderlessTxn {
-                    sender: txn_metadata.sender,
-                    nonce,
-                    expiration_time: txn_metadata.expiration_timestamp_secs,
-                }
-            }
+            ReplayProtector::Nonce(nonce) => Self::OrderlessTxn {
+                sender: txn_metadata.sender,
+                nonce,
+                expiration_time: txn_metadata.expiration_timestamp_secs,
+            },
         }
     }
 
@@ -113,58 +108,46 @@ impl SessionId {
 
     pub fn prologue_meta(txn_metadata: &TransactionMetadata) -> Self {
         match txn_metadata.replay_protector() {
-            ReplayProtector::SequenceNumber(sequence_number) => {
-                Self::Prologue {
-                    sender: txn_metadata.sender,
-                    sequence_number,
-                    script_hash: txn_metadata.script_hash.clone(),
-                }
+            ReplayProtector::SequenceNumber(sequence_number) => Self::Prologue {
+                sender: txn_metadata.sender,
+                sequence_number,
+                script_hash: txn_metadata.script_hash.clone(),
             },
-            ReplayProtector::Nonce(nonce) => {
-                Self::OrderlessTxnProlouge {
-                    sender: txn_metadata.sender,
-                    nonce,
-                    expiration_time: txn_metadata.expiration_timestamp_secs,
-                }
-            }
+            ReplayProtector::Nonce(nonce) => Self::OrderlessTxnProlouge {
+                sender: txn_metadata.sender,
+                nonce,
+                expiration_time: txn_metadata.expiration_timestamp_secs,
+            },
         }
     }
 
     pub fn run_on_abort(txn_metadata: &TransactionMetadata) -> Self {
         match txn_metadata.replay_protector() {
-            ReplayProtector::SequenceNumber(sequence_number) => {
-                Self::RunOnAbort {
-                    sender: txn_metadata.sender,
-                    sequence_number,
-                    script_hash: txn_metadata.script_hash.clone(),
-                }
+            ReplayProtector::SequenceNumber(sequence_number) => Self::RunOnAbort {
+                sender: txn_metadata.sender,
+                sequence_number,
+                script_hash: txn_metadata.script_hash.clone(),
             },
-            ReplayProtector::Nonce(nonce) => {
-                Self::OrderlessRunOnAbort {
-                    sender: txn_metadata.sender,
-                    nonce,
-                    expiration_time: txn_metadata.expiration_timestamp_secs,
-                }
-            }
+            ReplayProtector::Nonce(nonce) => Self::OrderlessRunOnAbort {
+                sender: txn_metadata.sender,
+                nonce,
+                expiration_time: txn_metadata.expiration_timestamp_secs,
+            },
         }
     }
 
     pub fn epilogue_meta(txn_metadata: &TransactionMetadata) -> Self {
         match txn_metadata.replay_protector() {
-            ReplayProtector::SequenceNumber(sequence_number) => {
-                Self::Epilogue {
-                    sender: txn_metadata.sender,
-                    sequence_number,
-                    script_hash: txn_metadata.script_hash.clone(),
-                }
+            ReplayProtector::SequenceNumber(sequence_number) => Self::Epilogue {
+                sender: txn_metadata.sender,
+                sequence_number,
+                script_hash: txn_metadata.script_hash.clone(),
             },
-            ReplayProtector::Nonce(nonce) => {
-                Self::OrderlessTxnEpilogue {
-                    sender: txn_metadata.sender,
-                    nonce: nonce,
-                    expiration_time: txn_metadata.expiration_timestamp_secs,
-                }
-            }
+            ReplayProtector::Nonce(nonce) => Self::OrderlessTxnEpilogue {
+                sender: txn_metadata.sender,
+                nonce,
+                expiration_time: txn_metadata.expiration_timestamp_secs,
+            },
         }
     }
 
@@ -211,9 +194,12 @@ impl SessionId {
             | Self::BlockMetaExt { id: _ } => vec![],
 
             // Question: Do we need to have script hash for orderless transactions here?
-            Self::OrderlessTxn { .. } | Self::OrderlessTxnProlouge { .. } | Self::OrderlessTxnEpilogue { .. } | Self::OrderlessRunOnAbort { .. } => {
+            Self::OrderlessTxn { .. }
+            | Self::OrderlessTxnProlouge { .. }
+            | Self::OrderlessTxnEpilogue { .. }
+            | Self::OrderlessRunOnAbort { .. } => {
                 vec![]
-            }
+            },
         }
     }
 }

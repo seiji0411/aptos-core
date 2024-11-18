@@ -202,9 +202,7 @@ impl LocalAccount {
     pub fn sign_with_transaction_builder(&self, builder: TransactionBuilder) -> SignedTransaction {
         let raw_txn = if builder.has_nonce() {
             // Do not increment sequence number for orderless transactions.
-            builder
-                .sender(self.address())
-                .build()
+            builder.sender(self.address()).build()
         } else {
             builder
                 .sender(self.address())
@@ -227,12 +225,10 @@ impl LocalAccount {
             .iter()
             .map(|signer| signer.private_key())
             .collect();
-        
+
         let raw_txn = if builder.has_nonce() {
             // Do not increment sequence number for orderless transactions.
-            builder
-                .sender(self.address())
-                .build()
+            builder.sender(self.address()).build()
         } else {
             builder
                 .sender(self.address())
@@ -265,9 +261,7 @@ impl LocalAccount {
             .collect();
         let raw_txn = if builder.has_nonce() {
             // Do not increment sequence number for orderless transactions.
-            builder
-                .sender(self.address())
-                .build()
+            builder.sender(self.address()).build()
         } else {
             builder
                 .sender(self.address())

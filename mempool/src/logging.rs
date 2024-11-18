@@ -13,7 +13,12 @@ use std::{fmt, fmt::Write, time::SystemTime};
 
 #[derive(Default)]
 pub struct TxnsLog {
-    txns: Vec<(AccountAddress, ReplayProtector, Option<String>, Option<SystemTime>)>,
+    txns: Vec<(
+        AccountAddress,
+        ReplayProtector,
+        Option<String>,
+        Option<SystemTime>,
+    )>,
     len: usize,
     max_displayed: usize,
 }
@@ -46,7 +51,12 @@ impl TxnsLog {
         self.len += 1;
     }
 
-    pub fn add_with_status(&mut self, account: AccountAddress, replay_protector: ReplayProtector, status: &str) {
+    pub fn add_with_status(
+        &mut self,
+        account: AccountAddress,
+        replay_protector: ReplayProtector,
+        status: &str,
+    ) {
         if self.txns.len() < self.max_displayed {
             self.txns
                 .push((account, replay_protector, Some(status.to_string()), None));
@@ -62,8 +72,12 @@ impl TxnsLog {
         timestamp: SystemTime,
     ) {
         if self.txns.len() < self.max_displayed {
-            self.txns
-                .push((account, replay_protector, Some(status.to_string()), Some(timestamp)));
+            self.txns.push((
+                account,
+                replay_protector,
+                Some(status.to_string()),
+                Some(timestamp),
+            ));
         }
         self.len += 1;
     }

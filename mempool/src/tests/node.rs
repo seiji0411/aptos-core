@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    core_mempool::{CoreMempool, TimelineState, AccountSequenceNumberInfo},
+    core_mempool::{AccountSequenceNumberInfo, CoreMempool, TimelineState},
     network::{BroadcastPeerPriority, MempoolSyncMsg},
     shared_mempool::{start_shared_mempool, types::SharedMempoolNotification},
     tests::common::TestTransaction,
@@ -34,7 +34,9 @@ use aptos_network::{
 };
 use aptos_storage_interface::mock::MockDbReaderWriter;
 use aptos_types::{
-    on_chain_config::{InMemoryOnChainConfig, OnChainConfigPayload}, transaction::ReplayProtector, PeerId
+    on_chain_config::{InMemoryOnChainConfig, OnChainConfigPayload},
+    transaction::ReplayProtector,
+    PeerId,
 };
 use aptos_vm_validator::mocks::mock_vm_validator::MockVMValidator;
 use enum_dispatch::enum_dispatch;

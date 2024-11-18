@@ -8,7 +8,8 @@ use crate::{
 use aptos::test::CliTestFramework;
 use aptos_consensus::QUORUM_STORE_DB_NAME;
 use aptos_forge::{
-    args::TransactionTypeArg, reconfig, wait_for_all_nodes_to_catchup, NodeExt, ReplayProtectionType, Swarm, SwarmExt, TransactionType
+    args::TransactionTypeArg, reconfig, wait_for_all_nodes_to_catchup, NodeExt,
+    ReplayProtectionType, Swarm, SwarmExt, TransactionType,
 };
 use aptos_logger::info;
 use aptos_rest_client::Client;

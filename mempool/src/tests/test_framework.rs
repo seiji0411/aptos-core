@@ -232,7 +232,13 @@ impl MempoolNode {
         &self,
         txns: &[TestTransaction],
         condition: Condition,
-    ) -> Result<(), (Vec<(AccountAddress, ReplayProtector)>, Vec<(AccountAddress, ReplayProtector)>)> {
+    ) -> Result<
+        (),
+        (
+            Vec<(AccountAddress, ReplayProtector)>,
+            Vec<(AccountAddress, ReplayProtector)>,
+        ),
+    > {
         let block = self
             .mempool
             .lock()

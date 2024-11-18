@@ -2,6 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use super::AccountSequenceNumberInfo;
 use crate::{
     core_mempool::{
         index::{
@@ -33,8 +34,6 @@ use std::{
     ops::Bound,
     time::{Duration, Instant, SystemTime},
 };
-
-use super::AccountSequenceNumberInfo;
 
 /// Estimated per-txn overhead of indexes. Needs to be updated if additional indexes are added.
 pub const TXN_INDEX_ESTIMATED_BYTES: usize = size_of::<crate::core_mempool::index::OrderedQueueKey>() // priority_index
@@ -305,10 +304,13 @@ impl TransactionStore {
             // insert into storage and other indexes
             self.system_ttl_index.insert(&txn);
             self.expiration_time_index.insert(&txn);
-            self.hash_index
-                .insert(txn.get_committed_hash(), (txn.get_sender(), txn_replay_protector));
+            self.hash_index.insert(
+                txn.get_committed_hash(),
+                (txn.get_sender(), txn_replay_protector),
+            );
             if let AccountSequenceNumberInfo::Required(acc_seq_num) = account_sequence_number {
-                self.account_sequence_numbers.insert(txn.get_sender(), acc_seq_num);
+                self.account_sequence_numbers
+                    .insert(txn.get_sender(), acc_seq_num);
             }
             self.size_bytes += txn.get_estimated_bytes();
             txns.insert(txn);
@@ -317,7 +319,7 @@ impl TransactionStore {
 
         match txn_replay_protector {
             ReplayProtector::SequenceNumber(_) => {
-                // Transactions with sequence number 
+                // Transactions with sequence number
                 if let AccountSequenceNumberInfo::Required(acc_seq_num) = account_sequence_number {
                     self.process_ready_transactions(&address, acc_seq_num);
                 } else {
@@ -331,14 +333,14 @@ impl TransactionStore {
                 if let Some(txns) = self.transactions.get_mut(&address) {
                     if let Some(txn) = txns.get_mut(&txn_replay_protector) {
                         txn.timeline_state = TimelineState::Ready(0);
-                        self.priority_index.insert(&txn);
+                        self.priority_index.insert(txn);
                         self.timeline_index
                             .get_mut(&sender_bucket(&address, self.num_sender_buckets))
                             .unwrap()
                             .insert(txn);
                     }
                 }
-            }
+            },
         }
         MempoolStatus::new(MempoolStatusCode::Accepted)
     }
@@ -441,21 +443,28 @@ impl TransactionStore {
     /// (this handles both cases where, (1) txn is first possible txn for an account and (2) the
     /// previous txn is committed).
     /// 2. The txn before this is ready for broadcast but not yet committed.
-    fn check_txn_ready(&self, txn: &MempoolTransaction, account_sequence_number: AccountSequenceNumberInfo) -> bool {
+    fn check_txn_ready(
+        &self,
+        txn: &MempoolTransaction,
+        account_sequence_number: AccountSequenceNumberInfo,
+    ) -> bool {
         let tx_replay_protector = txn.sequence_info.transaction_replay_protector;
         match tx_replay_protector {
             ReplayProtector::SequenceNumber(tx_sequence_number) => {
-                if let AccountSequenceNumberInfo::Required(account_sequence_number) = account_sequence_number {
+                if let AccountSequenceNumberInfo::Required(account_sequence_number) =
+                    account_sequence_number
+                {
                     if tx_sequence_number == account_sequence_number {
                         return true;
                     } else if tx_sequence_number == 0 {
                         // shouldn't really get here because filtering out old txn sequence numbers happens earlier in workflow
                         unreachable!("[mempool] already committed txn detected, cannot be checked for readiness upon insertion");
                     }
-            
+
                     // check previous txn in sequence is ready
                     if let Some(account_txns) = self.transactions.get(&txn.get_sender()) {
-                        let prev_seq_number = ReplayProtector::SequenceNumber(tx_sequence_number - 1);
+                        let prev_seq_number =
+                            ReplayProtector::SequenceNumber(tx_sequence_number - 1);
                         if let Some(prev_txn) = account_txns.get(&prev_seq_number) {
                             if let TimelineState::Ready(_) = prev_txn.timeline_state {
                                 return true;
@@ -470,7 +479,7 @@ impl TransactionStore {
             ReplayProtector::Nonce(_) => {
                 // Nonce based transactions are always ready for broadcast
                 true
-            }
+            },
         }
     }
 
@@ -536,7 +545,6 @@ impl TransactionStore {
             let mut min_seq = account_sequence_num;
 
             while let Some(txn) = txns.get_mut(&ReplayProtector::SequenceNumber(min_seq)) {
-                
                 let ready_for_mempool_broadcast = txn.timeline_state == TimelineState::NotReady;
                 if ready_for_mempool_broadcast {
                     self.timeline_index
@@ -562,7 +570,10 @@ impl TransactionStore {
                             &mut txn.insertion_info,
                             txn.priority_of_sender
                                 .clone()
-                                .map_or_else(|| "Unknown".to_string(), |priority| priority.to_string())
+                                .map_or_else(
+                                    || "Unknown".to_string(),
+                                    |priority| priority.to_string(),
+                                )
                                 .as_str(),
                         );
                     }
@@ -574,7 +585,10 @@ impl TransactionStore {
                             &mut txn.insertion_info,
                             txn.priority_of_sender
                                 .clone()
-                                .map_or_else(|| "Unknown".to_string(), |priority| priority.to_string())
+                                .map_or_else(
+                                    || "Unknown".to_string(),
+                                    |priority| priority.to_string(),
+                                )
                                 .as_str(),
                         );
                     }
@@ -606,7 +620,11 @@ impl TransactionStore {
         }
     }
 
-    fn clean_committed_transactions_below_account_seq_num(&mut self, address: &AccountAddress, account_sequence_number: u64) {
+    fn clean_committed_transactions_below_account_seq_num(
+        &mut self,
+        address: &AccountAddress,
+        account_sequence_number: u64,
+    ) {
         // Remove all previous seq number transactions for this account.
         // This can happen if transactions are sent to multiple nodes and one of the
         // nodes has sent the transaction to consensus but this node still has the
@@ -640,13 +658,23 @@ impl TransactionStore {
     /// Handles transaction commit.
     /// It includes deletion of all transactions with sequence number <= `account_sequence_number`
     /// and potential promotion of sequential txns to PriorityIndex/TimelineIndex.
-    pub fn commit_transaction(&mut self, account: &AccountAddress, replay_protector: ReplayProtector) {
+    pub fn commit_transaction(
+        &mut self,
+        account: &AccountAddress,
+        replay_protector: ReplayProtector,
+    ) {
         match replay_protector {
             ReplayProtector::SequenceNumber(txn_sequence_number) => {
-                let current_account_seq_number = self.get_account_sequence_number(account).map_or(0, |v| *v);
-                let new_account_seq_number = max(current_account_seq_number, txn_sequence_number + 1);
-                self.account_sequence_numbers.insert(*account, new_account_seq_number);
-                self.clean_committed_transactions_below_account_seq_num(account, new_account_seq_number);
+                let current_account_seq_number =
+                    self.get_account_sequence_number(account).map_or(0, |v| *v);
+                let new_account_seq_number =
+                    max(current_account_seq_number, txn_sequence_number + 1);
+                self.account_sequence_numbers
+                    .insert(*account, new_account_seq_number);
+                self.clean_committed_transactions_below_account_seq_num(
+                    account,
+                    new_account_seq_number,
+                );
                 self.process_ready_transactions(account, new_account_seq_number);
             },
             ReplayProtector::Nonce(nonce) => {
@@ -664,7 +692,7 @@ impl TransactionStore {
                         );
                     }
                 }
-            }
+            },
         }
     }
 
@@ -901,7 +929,6 @@ impl TransactionStore {
         };
         while let Some(key) = gc_iter.next() {
             if let Some(txns) = self.transactions.get_mut(&key.address) {
-
                 // If a sequence number transaction is garbage collected, then its subsequent transactions are marked as non-ready.
                 // As orderless transactions (transactions with nonce) are always ready, they are not affected by this.
                 if let ReplayProtector::SequenceNumber(seq_num) = key.replay_protector {
@@ -911,7 +938,9 @@ impl TransactionStore {
                         .filter(|next_key| key.address == next_key.address)
                         .map_or(Bound::Unbounded, |next_key| {
                             match next_key.replay_protector {
-                                ReplayProtector::SequenceNumber(next_seq_num) => Bound::Excluded(next_seq_num),
+                                ReplayProtector::SequenceNumber(next_seq_num) => {
+                                    Bound::Excluded(next_seq_num)
+                                },
                                 ReplayProtector::Nonce(_) => Bound::Unbounded,
                             }
                         });
@@ -932,7 +961,7 @@ impl TransactionStore {
                         if let TimelineState::Ready(_) = t.timeline_state {
                             t.timeline_state = TimelineState::NotReady;
                         }
-                    }    
+                    }
                 }
 
                 if let Some(txn) = txns.remove(&key.replay_protector) {
@@ -943,7 +972,11 @@ impl TransactionStore {
                         counters::GC_PARKED_TXN_LABEL
                     };
                     let account = txn.get_sender();
-                    gc_txns_log.add_with_status(account, txn.sequence_info.transaction_replay_protector, status);
+                    gc_txns_log.add_with_status(
+                        account,
+                        txn.sequence_info.transaction_replay_protector,
+                        status,
+                    );
                     if let Ok(time_delta) =
                         SystemTime::now().duration_since(txn.insertion_info.insertion_time)
                     {
@@ -974,20 +1007,20 @@ impl TransactionStore {
         let mut txns_log = TxnsLog::new();
         for (account, txns) in self.transactions.iter() {
             for txn in txns.values() {
-                let status =
-                    match txn.sequence_info.transaction_replay_protector {
-                        ReplayProtector::SequenceNumber(_) => {
-                            if self
-                                .parking_lot_index
-                                .contains(account, txn.sequence_info.transaction_replay_protector, txn.get_committed_hash())
-                            {
-                                "parked"
-                            } else {
-                                "ready"
-                            }
-                        },
-                        ReplayProtector::Nonce(_) => "ready",
-                    };
+                let status = match txn.sequence_info.transaction_replay_protector {
+                    ReplayProtector::SequenceNumber(_) => {
+                        if self.parking_lot_index.contains(
+                            account,
+                            txn.sequence_info.transaction_replay_protector,
+                            txn.get_committed_hash(),
+                        ) {
+                            "parked"
+                        } else {
+                            "ready"
+                        }
+                    },
+                    ReplayProtector::Nonce(_) => "ready",
+                };
                 txns_log.add_full_metadata(
                     *account,
                     txn.sequence_info.transaction_replay_protector,

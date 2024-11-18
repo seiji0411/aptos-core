@@ -181,7 +181,7 @@ impl MockSharedMempool {
                 let account_sequence_number = match txn.replay_protector() {
                     ReplayProtector::SequenceNumber(_) => AccountSequenceNumberInfo::Required(0),
                     ReplayProtector::Nonce(_) => AccountSequenceNumberInfo::NotRequired,
-                };    
+                };
                 if pool
                     .add_txn(
                         txn.clone(),

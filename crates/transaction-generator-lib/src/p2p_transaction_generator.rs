@@ -184,13 +184,27 @@ impl P2PTransactionGenerator {
     ) -> SignedTransaction {
         let payload = if self.use_fa_transfer {
             match self.replay_protection {
-                ReplayProtectionType::SequenceNumber => aptos_stdlib::aptos_account_fungible_transfer_only(*to, self.send_amount),
-                ReplayProtectionType::Nonce => aptos_stdlib::aptos_account_fungible_transfer_only_v2(*to, self.send_amount, Some(self.rng.gen())),
+                ReplayProtectionType::SequenceNumber => {
+                    aptos_stdlib::aptos_account_fungible_transfer_only(*to, self.send_amount)
+                },
+                ReplayProtectionType::Nonce => {
+                    aptos_stdlib::aptos_account_fungible_transfer_only_v2(
+                        *to,
+                        self.send_amount,
+                        Some(self.rng.gen()),
+                    )
+                },
             }
         } else {
             match self.replay_protection {
-                ReplayProtectionType::SequenceNumber => aptos_stdlib::aptos_coin_transfer(*to, self.send_amount),
-                ReplayProtectionType::Nonce => aptos_stdlib::aptos_coin_transfer_v2(*to, self.send_amount, Some(self.rng.gen()))
+                ReplayProtectionType::SequenceNumber => {
+                    aptos_stdlib::aptos_coin_transfer(*to, self.send_amount)
+                },
+                ReplayProtectionType::Nonce => aptos_stdlib::aptos_coin_transfer_v2(
+                    *to,
+                    self.send_amount,
+                    Some(self.rng.gen()),
+                ),
             }
         };
 
@@ -213,19 +227,11 @@ impl P2PTransactionGenerator {
             },
             InvalidTransactionType::Sender => {
                 let txn_factory = &self.txn_factory.clone();
-                self.gen_single_txn(
-                    &invalid_account,
-                    receiver,
-                    txn_factory,
-                )
+                self.gen_single_txn(&invalid_account, receiver, txn_factory)
             },
             InvalidTransactionType::Receiver => {
                 let txn_factory = &self.txn_factory.clone();
-                self.gen_single_txn(
-                    sender,
-                    &invalid_address,
-                    txn_factory,
-                )
+                self.gen_single_txn(sender, &invalid_address, txn_factory)
             },
             InvalidTransactionType::Duplication => {
                 // if this is the first tx, default to generate invalid tx with wrong chain id

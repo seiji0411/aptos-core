@@ -107,11 +107,7 @@ pub enum AccountType {
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorkflowKind {
-    CreateMintBurn { 
-        count: usize, 
-        creation_balance: u64,
-        replay_protection: ReplayProtectionType,
-    },
+    CreateMintBurn { count: usize, creation_balance: u64 },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -324,7 +320,7 @@ pub async fn create_txn_generator_creator(
                     add_created_accounts_to_pool,
                     max_account_working_set,
                     creation_balance,
-                    replay_protection,
+                    replay_protection: _,
                 } => Box::new(AccountGeneratorCreator::new(
                     txn_factory.clone(),
                     add_created_accounts_to_pool.then(|| {
@@ -338,7 +334,10 @@ pub async fn create_txn_generator_creator(
                     *max_account_working_set,
                     *creation_balance,
                 )),
-                TransactionType::PublishPackage { use_account_pool, replay_protection } => wrap_accounts_pool(
+                TransactionType::PublishPackage {
+                    use_account_pool,
+                    replay_protection: _,
+                } => wrap_accounts_pool(
                     Box::new(PublishPackageCreator::new(txn_factory.clone())),
                     *use_account_pool,
                     &accounts_pool,
@@ -367,14 +366,15 @@ pub async fn create_txn_generator_creator(
                     *use_account_pool,
                     &accounts_pool,
                 ),
-                TransactionType::BatchTransfer { batch_size, replay_protection } => {
-                    Box::new(BatchTransferTransactionGeneratorCreator::new(
-                        txn_factory.clone(),
-                        SEND_AMOUNT,
-                        addresses_pool.clone(),
-                        *batch_size,
-                    ))
-                },
+                TransactionType::BatchTransfer {
+                    batch_size,
+                    replay_protection: _,
+                } => Box::new(BatchTransferTransactionGeneratorCreator::new(
+                    txn_factory.clone(),
+                    SEND_AMOUNT,
+                    addresses_pool.clone(),
+                    *batch_size,
+                )),
                 TransactionType::Workflow {
                     num_modules,
                     use_account_pool,
@@ -392,6 +392,7 @@ pub async fn create_txn_generator_creator(
                         use_account_pool.then(|| accounts_pool.clone()),
                         cur_phase.clone(),
                         *progress_type,
+                        *replay_protection,
                     )
                     .await,
                 ),

@@ -30,7 +30,11 @@ use aptos_metrics_core::HistogramTimer;
 use aptos_network::application::interface::NetworkClientInterface;
 use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
 use aptos_types::{
-    account_address::AccountAddress, mempool_status::{MempoolStatus, MempoolStatusCode}, on_chain_config::{OnChainConfigPayload, OnChainConfigProvider, OnChainConsensusConfig}, transaction::{ReplayProtector, SignedTransaction}, vm_status::{DiscardedVMStatus, StatusCode}
+    account_address::AccountAddress,
+    mempool_status::{MempoolStatus, MempoolStatusCode},
+    on_chain_config::{OnChainConfigPayload, OnChainConfigProvider, OnChainConsensusConfig},
+    transaction::{ReplayProtector, SignedTransaction},
+    vm_status::{DiscardedVMStatus, StatusCode},
 };
 use aptos_vm_validator::vm_validator::{get_account_sequence_number, TransactionValidation};
 use futures::{channel::oneshot, stream::FuturesUnordered};
@@ -311,19 +315,17 @@ where
     let account_seq_numbers = IO_POOL.install(|| {
         transactions
             .par_iter()
-            .map(|(t, _, _)| {
-                match t.replay_protector() {
-                    ReplayProtector::Nonce(_) => Ok(AccountSequenceNumberInfo::NotRequired),
-                    ReplayProtector::SequenceNumber(_) => {
-                        get_account_sequence_number(&state_view, t.sender())
-                        .map(|sequence_number| AccountSequenceNumberInfo::Required(sequence_number))
+            .map(|(t, _, _)| match t.replay_protector() {
+                ReplayProtector::Nonce(_) => Ok(AccountSequenceNumberInfo::NotRequired),
+                ReplayProtector::SequenceNumber(_) => {
+                    get_account_sequence_number(&state_view, t.sender())
+                        .map(AccountSequenceNumberInfo::Required)
                         .map_err(|e| {
                             error!(LogSchema::new(LogEntry::DBError).error(&e));
                             counters::DB_ERROR.inc();
                             e
                         })
-                    },
-                }
+                },
             })
             .collect::<Vec<_>>()
     });
@@ -333,8 +335,7 @@ where
     counters::PROCESS_TXN_BREAKDOWN_LATENCY
         .with_label_values(&[counters::FETCH_SEQ_NUM_LABEL])
         .observe(storage_read_latency.as_secs_f64() / transactions.len() as f64);
-    
-    
+
     let transactions: Vec<_> = transactions
         .into_iter()
         .enumerate()
@@ -343,7 +344,12 @@ where
                 match account_sequence_num {
                     AccountSequenceNumberInfo::Required(sequence_num) => {
                         if t.sequence_number() >= sequence_num {
-                            return Some((t, AccountSequenceNumberInfo::Required(sequence_num), ready_time_at_sender, priority));
+                            return Some((
+                                t,
+                                AccountSequenceNumberInfo::Required(sequence_num),
+                                ready_time_at_sender,
+                                priority,
+                            ));
                         } else {
                             statuses.push((
                                 t,
@@ -355,7 +361,12 @@ where
                         }
                     },
                     AccountSequenceNumberInfo::NotRequired => {
-                        return Some((t, AccountSequenceNumberInfo::NotRequired, ready_time_at_sender, priority));
+                        return Some((
+                            t,
+                            AccountSequenceNumberInfo::NotRequired,
+                            ready_time_at_sender,
+                            priority,
+                        ));
                     },
                 }
             } else {

@@ -15,8 +15,11 @@ use aptos_executor_types::ExecutorResult;
 use aptos_infallible::Mutex;
 use aptos_logger::prelude::*;
 use aptos_types::{
-    account_address::AccountAddress, transaction::{ReplayProtector, SignedTransaction},
-    validator_verifier::ValidatorVerifier, vm_status::DiscardedVMStatus, PeerId,
+    account_address::AccountAddress,
+    transaction::{ReplayProtector, SignedTransaction},
+    validator_verifier::ValidatorVerifier,
+    vm_status::DiscardedVMStatus,
+    PeerId,
 };
 use once_cell::sync::OnceCell;
 use rayon::prelude::*;

@@ -28,7 +28,10 @@ use aptos_network::{
     },
     ProtocolId,
 };
-use aptos_types::{transaction::{ReplayProtector, SignedTransaction}, PeerId};
+use aptos_types::{
+    transaction::{ReplayProtector, SignedTransaction},
+    PeerId,
+};
 use maplit::btreemap;
 use rand::{rngs::StdRng, SeedableRng};
 use std::collections::HashMap;

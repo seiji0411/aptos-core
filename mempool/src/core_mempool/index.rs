@@ -21,7 +21,7 @@ use std::{
 };
 
 // pub type AccountTransactions = BTreeMap<ReplayProtector, MempoolTransaction>;
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AccountTransactions {
     nonce_transactions: BTreeMap<u64 /* Nonce */, MempoolTransaction>,
     sequence_number_transactions: BTreeMap<u64 /* Sequence number */, MempoolTransaction>,
@@ -31,14 +31,21 @@ impl AccountTransactions {
     pub(crate) fn get(&self, replay_protector: &ReplayProtector) -> Option<&MempoolTransaction> {
         match replay_protector {
             ReplayProtector::Nonce(nonce) => self.nonce_transactions.get(nonce),
-            ReplayProtector::SequenceNumber(sequence_number) => self.sequence_number_transactions.get(sequence_number),
+            ReplayProtector::SequenceNumber(sequence_number) => {
+                self.sequence_number_transactions.get(sequence_number)
+            },
         }
     }
 
-    pub(crate) fn get_mut(&mut self, replay_protector: &ReplayProtector) -> Option<&mut MempoolTransaction> {
+    pub(crate) fn get_mut(
+        &mut self,
+        replay_protector: &ReplayProtector,
+    ) -> Option<&mut MempoolTransaction> {
         match replay_protector {
             ReplayProtector::Nonce(nonce) => self.nonce_transactions.get_mut(nonce),
-            ReplayProtector::SequenceNumber(sequence_number) => self.sequence_number_transactions.get_mut(sequence_number),
+            ReplayProtector::SequenceNumber(sequence_number) => {
+                self.sequence_number_transactions.get_mut(sequence_number)
+            },
         }
     }
 
@@ -46,27 +53,31 @@ impl AccountTransactions {
         match txn.sequence_info.transaction_replay_protector {
             ReplayProtector::Nonce(nonce) => {
                 self.nonce_transactions.insert(nonce, txn);
-            }
+            },
             ReplayProtector::SequenceNumber(sequence_number) => {
-                self.sequence_number_transactions.insert(sequence_number, txn);
-            }
+                self.sequence_number_transactions
+                    .insert(sequence_number, txn);
+            },
         }
     }
 
-    pub(crate) fn remove(&mut self, replay_protector: &ReplayProtector) -> Option<MempoolTransaction> {
+    pub(crate) fn remove(
+        &mut self,
+        replay_protector: &ReplayProtector,
+    ) -> Option<MempoolTransaction> {
         match replay_protector {
-            ReplayProtector::Nonce(nonce) => {
-                self.nonce_transactions.remove(&nonce)
-            }
+            ReplayProtector::Nonce(nonce) => self.nonce_transactions.remove(nonce),
             ReplayProtector::SequenceNumber(sequence_number) => {
-                self.sequence_number_transactions.remove(&sequence_number)
-            }
+                self.sequence_number_transactions.remove(sequence_number)
+            },
         }
     }
 
     pub(crate) fn append(&mut self, other: &mut Self) {
-        self.nonce_transactions.append(&mut other.nonce_transactions);
-        self.sequence_number_transactions.append(&mut other.sequence_number_transactions);
+        self.nonce_transactions
+            .append(&mut other.nonce_transactions);
+        self.sequence_number_transactions
+            .append(&mut other.sequence_number_transactions);
     }
 
     pub(crate) fn clear(&mut self) {
@@ -75,30 +86,29 @@ impl AccountTransactions {
     }
 
     pub(crate) fn seq_num_split_off(&mut self, sequence_number: u64) -> Self {
-        let mut other = Self::default();
-        other.sequence_number_transactions = self.sequence_number_transactions.split_off(&sequence_number);
-        other
+        AccountTransactions {
+            sequence_number_transactions: self
+                .sequence_number_transactions
+                .split_off(&sequence_number),
+            nonce_transactions: BTreeMap::new(),
+        }
     }
 
-    pub(crate) fn seq_num_range_mut(&mut self, range: impl RangeBounds<u64>) -> RangeMut<'_, u64, MempoolTransaction> {
+    pub(crate) fn seq_num_range_mut(
+        &mut self,
+        range: impl RangeBounds<u64>,
+    ) -> RangeMut<'_, u64, MempoolTransaction> {
         self.sequence_number_transactions.range_mut(range)
     }
 
     pub(crate) fn values(&self) -> impl Iterator<Item = &MempoolTransaction> {
-        self.nonce_transactions.values().chain(self.sequence_number_transactions.values())
+        self.nonce_transactions
+            .values()
+            .chain(self.sequence_number_transactions.values())
     }
-    
+
     pub(crate) fn len(&self) -> usize {
         self.nonce_transactions.len() + self.sequence_number_transactions.len()
-    }
-}
-
-impl Default for AccountTransactions {
-    fn default() -> Self {
-        Self {
-            nonce_transactions: BTreeMap::new(),
-            sequence_number_transactions: BTreeMap::new(),
-        }
     }
 }
 
@@ -270,11 +280,9 @@ pub struct TTLOrderingKey {
 impl Ord for TTLOrderingKey {
     fn cmp(&self, other: &TTLOrderingKey) -> Ordering {
         match self.expiration_time.cmp(&other.expiration_time) {
-            Ordering::Equal => {
-                match self.address.cmp(&other.address) {
-                    Ordering::Equal => self.replay_protector.cmp(&other.replay_protector),
-                    ordering => ordering,
-                }
+            Ordering::Equal => match self.address.cmp(&other.address) {
+                Ordering::Equal => self.replay_protector.cmp(&other.replay_protector),
+                ordering => ordering,
             },
             ordering => ordering,
         }
@@ -332,22 +340,33 @@ impl TimelineIndex {
     }
 
     /// Read transactions from the timeline from `start_timeline_id` (exclusive) to `end_timeline_id` (inclusive).
-    pub(crate) fn timeline_range(&self, start_timeline_id: TimelineId, end_timeline_id: TimelineId) -> Vec<(AccountAddress, ReplayProtector)> {
+    pub(crate) fn timeline_range(
+        &self,
+        start_timeline_id: TimelineId,
+        end_timeline_id: TimelineId,
+    ) -> Vec<(AccountAddress, ReplayProtector)> {
         self.timeline
-            .range((Bound::Excluded(start_timeline_id), Bound::Included(end_timeline_id)))
+            .range((
+                Bound::Excluded(start_timeline_id),
+                Bound::Included(end_timeline_id),
+            ))
             .map(|(_idx, &(address, replay_protector, _))| (address, replay_protector))
             .collect()
     }
 
     pub(crate) fn insert(&mut self, txn: &mut MempoolTransaction) {
-        if self.timeline.insert(
-            self.next_timeline_id,
-            (
-                txn.get_sender(),
-                txn.sequence_info.transaction_replay_protector,
-                Instant::now(),
-            ),
-        ).is_none() {
+        if self
+            .timeline
+            .insert(
+                self.next_timeline_id,
+                (
+                    txn.get_sender(),
+                    txn.sequence_info.transaction_replay_protector,
+                    Instant::now(),
+                ),
+            )
+            .is_none()
+        {
             txn.timeline_state = TimelineState::Ready(self.next_timeline_id);
             self.next_timeline_id += 1;
         }
@@ -515,13 +534,13 @@ impl ParkingLotIndex {
                     txn.insertion_info.park_time = Some(SystemTime::now());
                 }
                 txn.was_parked = true;
-        
+
                 self.data
                     .entry(txn.txn.sender())
                     .or_default()
                     .insert((sequence_num, txn.get_committed_hash()));
-            }
-            ReplayProtector::Nonce(_) => {}
+            },
+            ReplayProtector::Nonce(_) => {},
         }
     }
 
@@ -537,19 +556,23 @@ impl ParkingLotIndex {
                         self.data.remove(sender);
                     }
                 }
-            }
-            ReplayProtector::Nonce(_) => {}
+            },
+            ReplayProtector::Nonce(_) => {},
         }
     }
 
-    pub(crate) fn contains(&self, account: &AccountAddress, replay_protector: ReplayProtector, hash: HashValue) -> bool {
+    pub(crate) fn contains(
+        &self,
+        account: &AccountAddress,
+        replay_protector: ReplayProtector,
+        hash: HashValue,
+    ) -> bool {
         // Orderless transactions are always in the "ready" state and are not stored in the parking lot.
         match replay_protector {
-            ReplayProtector::SequenceNumber(seq_num) => {
-                self.data
-                    .get(account)
-                    .map_or(false, |txns| txns.contains(&(seq_num, hash)))
-            }
+            ReplayProtector::SequenceNumber(seq_num) => self
+                .data
+                .get(account)
+                .map_or(false, |txns| txns.contains(&(seq_num, hash))),
             ReplayProtector::Nonce(_) => false,
         }
     }

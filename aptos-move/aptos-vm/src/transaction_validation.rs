@@ -13,8 +13,10 @@ use crate::{
 };
 use aptos_gas_algebra::Gas;
 use aptos_types::{
-    account_config::constants::CORE_CODE_ADDRESS, fee_statement::FeeStatement,
-    on_chain_config::Features, transaction::{MultisigTransactionPayload, ReplayProtector, TransactionExecutable},
+    account_config::constants::CORE_CODE_ADDRESS,
+    fee_statement::FeeStatement,
+    on_chain_config::Features,
+    transaction::{MultisigTransactionPayload, ReplayProtector, TransactionExecutable},
 };
 use aptos_vm_logging::log_schema::AdapterLogSchema;
 use aptos_vm_types::module_and_script_storage::module_storage::AptosModuleStorage;
@@ -43,22 +45,30 @@ pub static APTOS_TRANSACTION_VALIDATION: Lazy<TransactionValidation> =
         user_epilogue_gas_payer_name: Identifier::new("epilogue_gas_payer").unwrap(),
         fee_payer_prologue_extended_name: Identifier::new("fee_payer_script_prologue_extended")
             .unwrap(),
-        fee_payer_prologue_orderless_extension_name: Identifier::new("fee_payer_script_prologue_orderless_extension")
-            .unwrap(),
+        fee_payer_prologue_orderless_extension_name: Identifier::new(
+            "fee_payer_script_prologue_orderless_extension",
+        )
+        .unwrap(),
         script_prologue_extended_name: Identifier::new("script_prologue_extended").unwrap(),
-        script_prologue_orderless_extension_name: Identifier::new("script_prologue_orderless_extension")
-            .unwrap(),
+        script_prologue_orderless_extension_name: Identifier::new(
+            "script_prologue_orderless_extension",
+        )
+        .unwrap(),
         multi_agent_prologue_extended_name: Identifier::new("multi_agent_script_prologue_extended")
             .unwrap(),
-        multi_agent_prologue_orderless_extension_name: Identifier::new("multi_agent_script_prologue_orderless_extension")
-            .unwrap(),
+        multi_agent_prologue_orderless_extension_name: Identifier::new(
+            "multi_agent_script_prologue_orderless_extension",
+        )
+        .unwrap(),
         user_epilogue_extended_name: Identifier::new("epilogue_extended").unwrap(),
         user_epilogue_orderless_extension_name: Identifier::new("epilogue_orderless_extension")
             .unwrap(),
         user_epilogue_gas_payer_extended_name: Identifier::new("epilogue_gas_payer_extended")
             .unwrap(),
-        user_epilogue_gas_payer_orderless_extension_name: Identifier::new("epilogue_gas_payer_orderless_extension")
-            .unwrap(),
+        user_epilogue_gas_payer_orderless_extension_name: Identifier::new(
+            "epilogue_gas_payer_orderless_extension",
+        )
+        .unwrap(),
     });
 
 /// On-chain functions used to validate transactions
@@ -133,15 +143,13 @@ pub(crate) fn run_script_prologue(
                     ReplayProtector::SequenceNumber(sequence_number) => {
                         // Question: Is this the right way to represent "option::some(sequence number)"
                         MoveValue::Vector(vec![MoveValue::U64(sequence_number)])
-                    }
+                    },
                     // Question: Is this the right way to represent "option::none()"
                     ReplayProtector::Nonce(_) => MoveValue::Vector(vec![]),
                 },
                 // nonce: Option<u64>
                 match txn_replay_protector {
-                    ReplayProtector::Nonce(nonce) => {
-                        MoveValue::Vector(vec![MoveValue::U64(nonce)])
-                    }
+                    ReplayProtector::Nonce(nonce) => MoveValue::Vector(vec![MoveValue::U64(nonce)]),
                     ReplayProtector::SequenceNumber(_) => MoveValue::Vector(vec![]),
                 },
                 MoveValue::vector_u8(txn_authentication_key),
@@ -159,13 +167,15 @@ pub(crate) fn run_script_prologue(
                 &APTOS_TRANSACTION_VALIDATION.fee_payer_prologue_orderless_extension_name,
                 args,
             )
-        }
-        else if features.is_transaction_simulation_enhancement_enabled() {
+        } else if features.is_transaction_simulation_enhancement_enabled() {
             // If the orderless transactions feature is not enabled, simply discard the orderless transactions.
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
                 // TODO: Make sure this VMStatus code discards the transaction
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -189,7 +199,10 @@ pub(crate) fn run_script_prologue(
             // If the orderless transactions feature is not enabled, simply discard the orderless transactions.
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -219,9 +232,7 @@ pub(crate) fn run_script_prologue(
                 },
                 // nonce: Option<u64>
                 match txn_replay_protector {
-                    ReplayProtector::Nonce(nonce) => {
-                        MoveValue::Vector(vec![MoveValue::U64(nonce)])
-                    },
+                    ReplayProtector::Nonce(nonce) => MoveValue::Vector(vec![MoveValue::U64(nonce)]),
                     ReplayProtector::SequenceNumber(_) => MoveValue::Vector(vec![]),
                 },
                 MoveValue::vector_u8(txn_authentication_key),
@@ -237,11 +248,13 @@ pub(crate) fn run_script_prologue(
                 &APTOS_TRANSACTION_VALIDATION.multi_agent_prologue_orderless_extension_name,
                 args,
             )
-        }
-        else if features.is_transaction_simulation_enhancement_enabled() {
+        } else if features.is_transaction_simulation_enhancement_enabled() {
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -262,7 +275,10 @@ pub(crate) fn run_script_prologue(
         } else {
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -294,9 +310,7 @@ pub(crate) fn run_script_prologue(
                 },
                 // nonce: Option<u64>
                 match txn_replay_protector {
-                    ReplayProtector::Nonce(nonce) => {
-                        MoveValue::Vector(vec![MoveValue::U64(nonce)])
-                    },
+                    ReplayProtector::Nonce(nonce) => MoveValue::Vector(vec![MoveValue::U64(nonce)]),
                     ReplayProtector::SequenceNumber(_) => MoveValue::Vector(vec![]),
                 },
                 MoveValue::vector_u8(txn_authentication_key),
@@ -311,11 +325,13 @@ pub(crate) fn run_script_prologue(
                 &APTOS_TRANSACTION_VALIDATION.script_prologue_extended_name,
                 args,
             )
-        }
-        else if features.is_transaction_simulation_enhancement_enabled() {
+        } else if features.is_transaction_simulation_enhancement_enabled() {
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -335,7 +351,10 @@ pub(crate) fn run_script_prologue(
         } else {
             let txn_sequence_number = match txn_replay_protector {
                 ReplayProtector::SequenceNumber(sequence_number) => Ok(sequence_number),
-                ReplayProtector::Nonce(_) => Err(VMStatus::error(StatusCode::FEATURE_NOT_ENABLED, Some("Orderless transactions not yet supported".to_string()))),
+                ReplayProtector::Nonce(_) => Err(VMStatus::error(
+                    StatusCode::FEATURE_NOT_ENABLED,
+                    Some("Orderless transactions not yet supported".to_string()),
+                )),
             }?;
             let args = vec![
                 MoveValue::Signer(txn_data.sender),
@@ -386,15 +405,18 @@ pub(crate) fn run_multisig_prologue(
     let provided_payload = match executable {
         TransactionExecutable::EntryFunction(entry_function) => {
             // TODO: See how to avoid cloning the entry function here.
-            bcs::to_bytes(&MultisigTransactionPayload::EntryFunction(entry_function.clone())).map_err(|_| unreachable_error.clone())?
-        }
+            bcs::to_bytes(&MultisigTransactionPayload::EntryFunction(
+                entry_function.clone(),
+            ))
+            .map_err(|_| unreachable_error.clone())?
+        },
         TransactionExecutable::Empty => {
             if features.is_abort_if_multisig_payload_mismatch_enabled() {
                 vec![]
             } else {
                 bcs::to_bytes::<Vec<u8>>(&vec![]).map_err(|_| unreachable_error.clone())?
             }
-        }
+        },
         TransactionExecutable::Script(_) => {
             // Question: Earlier, multisig transactions only supported EntryFunction payloads.
             // So, what should we do if the executable for a multisig transaction is a script?
@@ -402,9 +424,9 @@ pub(crate) fn run_multisig_prologue(
                 StatusCode::FEATURE_NOT_ENABLED,
                 Some("Script payload not supported for multisig transactions".to_string()),
             ));
-        }
+        },
     };
-    
+
     // let provided_payload = if let Some(payload) = &payload.transaction_payload {
     //     bcs::to_bytes(&payload).map_err(|_| unreachable_error.clone())?
     // } else {

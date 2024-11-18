@@ -401,6 +401,9 @@ fn decode_transaction(txn: &SignedTransaction) -> MockVMTransaction {
         TransactionPayload::Multisig(_) => {
             unimplemented!("MockVM does not support multisig transaction payload.")
         },
+        TransactionPayload::V2(_) => {
+            unimplemented!("Transaction Payload V2 is not supported.")
+        },
         // Deprecated.
         TransactionPayload::ModuleBundle(_) => {
             unreachable!("Module bundle payload has been removed")

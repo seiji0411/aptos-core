@@ -16,14 +16,22 @@ use aptos_crypto::{
     ValidCryptoMaterial,
 };
 use aptos_types::{
-    account_address::AccountAddress, aggregate_signature::AggregateSignature, block_metadata::BlockMetadata, block_metadata_ext::BlockMetadataExt, contract_event::{ContractEvent, EventWithVersion}, dkg::{DKGTranscript, DKGTranscriptMetadata}, jwks::{jwk::JWK, ProviderJWKs, QuorumCertifiedUpdate}, keyless, transaction::{
+    account_address::AccountAddress,
+    aggregate_signature::AggregateSignature,
+    block_metadata::BlockMetadata,
+    block_metadata_ext::BlockMetadataExt,
+    contract_event::{ContractEvent, EventWithVersion},
+    dkg::{DKGTranscript, DKGTranscriptMetadata},
+    jwks::{jwk::JWK, ProviderJWKs, QuorumCertifiedUpdate},
+    keyless,
+    transaction::{
         authenticator::{
             AccountAuthenticator, AnyPublicKey, AnySignature, MultiKey, MultiKeyAuthenticator,
             SingleKeyAuthenticator, TransactionAuthenticator, MAX_NUM_OF_SIGS,
         },
         webauthn::{PartialAuthenticatorAssertionResponse, MAX_WEBAUTHN_SIGNATURE_BYTES},
         Script, SignedTransaction, TransactionOutput, TransactionWithProof,
-    }
+    },
 };
 use once_cell::sync::Lazy;
 use poem_openapi::{Object, Union};
@@ -921,7 +929,7 @@ pub enum TransactionPayload {
     ModuleBundlePayload(DeprecatedModuleBundlePayload),
     MultisigPayload(MultisigPayload),
 
-    V2(TransactionPayloadV2)
+    V2(TransactionPayloadV2),
 }
 
 impl VerifyInput for TransactionPayload {
@@ -1000,7 +1008,6 @@ impl TryFrom<Script> for ScriptPayload {
     }
 }
 
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Union)]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[oai(one_of, discriminator_name = "type", rename_all = "snake_case")]
@@ -1012,7 +1019,6 @@ pub enum TransactionExecutable {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Object)]
 pub struct Empty;
-
 
 impl VerifyInput for TransactionExecutable {
     fn verify(&self) -> anyhow::Result<()> {
@@ -1042,7 +1048,7 @@ impl TransactionExecutable {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[oai(one_of, discriminator_name = "type", rename_all = "snake_case")]
 pub enum TransactionExtraConfig {
-    V1(TransactionExtraConfigV1)
+    V1(TransactionExtraConfigV1),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Object)]
@@ -1064,7 +1070,6 @@ impl TransactionExtraConfigV1 {
         self.multisig_address.is_some()
     }
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Union)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -1097,7 +1102,6 @@ impl VerifyInput for TransactionPayloadV2V1 {
     }
 }
 
-
 impl VerifyInput for TransactionPayloadV2 {
     fn verify(&self) -> anyhow::Result<()> {
         match self {
@@ -1105,7 +1109,6 @@ impl VerifyInput for TransactionPayloadV2 {
         }
     }
 }
-
 
 // We use an enum here for extensibility so we can add Script payload support
 // in the future for example.

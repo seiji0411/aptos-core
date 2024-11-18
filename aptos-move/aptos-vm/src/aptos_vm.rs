@@ -65,7 +65,12 @@ use aptos_types::{
     randomness::Randomness,
     state_store::{state_key::StateKey, StateView, TStateView},
     transaction::{
-        authenticator::AnySignature, signature_verified_transaction::SignatureVerifiedTransaction, BlockOutput, EntryFunction, ExecutionError, ExecutionStatus, ModuleBundle, MultisigTransactionPayload, ReplayProtector, Script, SignedTransaction, Transaction, TransactionArgument, TransactionAuxiliaryData, TransactionExecutable, TransactionExtraConfig, TransactionOutput, TransactionPayload, TransactionPayloadV2, TransactionStatus, VMValidatorResult, ViewFunctionOutput, WriteSetPayload
+        authenticator::AnySignature, signature_verified_transaction::SignatureVerifiedTransaction,
+        BlockOutput, EntryFunction, ExecutionError, ExecutionStatus, ModuleBundle,
+        MultisigTransactionPayload, ReplayProtector, Script, SignedTransaction, Transaction,
+        TransactionArgument, TransactionAuxiliaryData, TransactionExecutable,
+        TransactionExtraConfig, TransactionOutput, TransactionPayload, TransactionPayloadV2,
+        TransactionStatus, VMValidatorResult, ViewFunctionOutput, WriteSetPayload,
     },
     vm_status::{AbortLocation, StatusCode, VMStatus},
 };
@@ -1106,10 +1111,10 @@ impl AptosVM {
                         has_modules_published_to_special_address,
                     )
                 })
-            }
+            },
             TransactionExecutable::Script(_) => {
                 unimplemented!("Script payloads are not yet supported for multisig");
-            }
+            },
         }
     }
 
@@ -1158,7 +1163,10 @@ impl AptosVM {
                 // TODO: Change this to avoid cloning the entry function
                 // Question: For backward compatibility reasons, still using `MultisigTransactionPayload` here.
                 // Should we find a way to deprecate this?
-                bcs::to_bytes(&MultisigTransactionPayload::EntryFunction(entry_func.clone())).map_err(|_| invariant_violation_error())?
+                bcs::to_bytes(&MultisigTransactionPayload::EntryFunction(
+                    entry_func.clone(),
+                ))
+                .map_err(|_| invariant_violation_error())?
             },
             TransactionExecutable::Empty => {
                 // Default to empty bytes if payload is not provided.
@@ -1173,7 +1181,7 @@ impl AptosVM {
             },
             TransactionExecutable::Script(_) => {
                 unimplemented!("Script payload for multisig is not yet supported");
-            }
+            },
         };
         // Failures here will be propagated back.
         let payload_bytes: Vec<Vec<u8>> = session
@@ -1989,25 +1997,28 @@ impl AptosVM {
 
         // TODO: See how to avoid clone operations in this match statement
         let (executable, multisig_address) = match txn.payload() {
-            TransactionPayload::Script(script) => (TransactionExecutable::Script(script.clone()), None),
-            TransactionPayload::EntryFunction(entry_func) => {
-                (TransactionExecutable::EntryFunction(entry_func.clone()), None)
+            TransactionPayload::Script(script) => {
+                (TransactionExecutable::Script(script.clone()), None)
             },
+            TransactionPayload::EntryFunction(entry_func) => (
+                TransactionExecutable::EntryFunction(entry_func.clone()),
+                None,
+            ),
             TransactionPayload::ModuleBundle(_) => {
                 return unwrap_or_discard!(Err(deprecated_module_bundle!()))
             },
-            TransactionPayload::Multisig(mulitisig) => {
-                (mulitisig.as_transaction_executable(), Some(mulitisig.multisig_address))
-            }
-            TransactionPayload::V2(
-                TransactionPayloadV2::V1 {
-                    executable,
-                    extra_config: TransactionExtraConfig::V1 {
-                            multisig_address,
-                            replay_protection_nonce: _
-                        },
-                }
-            ) => (executable.clone(), multisig_address.clone()),
+            TransactionPayload::Multisig(mulitisig) => (
+                mulitisig.as_transaction_executable(),
+                Some(mulitisig.multisig_address),
+            ),
+            TransactionPayload::V2(TransactionPayloadV2::V1 {
+                executable,
+                extra_config:
+                    TransactionExtraConfig::V1 {
+                        multisig_address,
+                        replay_protection_nonce: _,
+                    },
+            }) => (executable.clone(), *multisig_address),
         };
 
         let result = if let Some(multisig_address) = multisig_address {
@@ -2601,7 +2612,10 @@ impl AptosVM {
 
         match payload {
             TransactionPayload::ModuleBundle(_) => Err(deprecated_module_bundle!()),
-            TransactionPayload::Script(_) | TransactionPayload::EntryFunction(_) | TransactionPayload::Multisig(_) | TransactionPayload::V2(_) => {
+            TransactionPayload::Script(_)
+            | TransactionPayload::EntryFunction(_)
+            | TransactionPayload::Multisig(_)
+            | TransactionPayload::V2(_) => {
                 // Runs script prologue for even multisig transaction to ensure the same tx
                 // validations are still run for this multisig execution tx, which is submitted by
                 // one of the owners.
@@ -2617,9 +2631,14 @@ impl AptosVM {
             },
         }?;
 
-        if let TransactionPayload::V2(
-            TransactionPayloadV2::V1 { executable, extra_config: TransactionExtraConfig::V1 { multisig_address, replay_protection_nonce: _ } }
-        ) = payload
+        if let TransactionPayload::V2(TransactionPayloadV2::V1 {
+            executable,
+            extra_config:
+                TransactionExtraConfig::V1 {
+                    multisig_address,
+                    replay_protection_nonce: _,
+                },
+        }) = payload
         {
             if executable.is_empty() && multisig_address.is_none() {
                 return Err(VMStatus::error(
@@ -2657,9 +2676,14 @@ impl AptosVM {
                     )?
                 },
 
-                TransactionPayload::V2(
-                    TransactionPayloadV2::V1 { executable, extra_config: TransactionExtraConfig::V1 { multisig_address, replay_protection_nonce: _ } }
-                ) => {
+                TransactionPayload::V2(TransactionPayloadV2::V1 {
+                    executable,
+                    extra_config:
+                        TransactionExtraConfig::V1 {
+                            multisig_address,
+                            replay_protection_nonce: _,
+                        },
+                }) => {
                     if let Some(multisig_address) = multisig_address {
                         transaction_validation::run_multisig_prologue(
                             session,
@@ -2673,7 +2697,9 @@ impl AptosVM {
                         )?
                     }
                 },
-                TransactionPayload::EntryFunction(_) | TransactionPayload::Script(_) | TransactionPayload::ModuleBundle(_) => {},
+                TransactionPayload::EntryFunction(_)
+                | TransactionPayload::Script(_)
+                | TransactionPayload::ModuleBundle(_) => {},
             }
         }
         Ok(())

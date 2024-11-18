@@ -4,7 +4,10 @@
 
 use crate::{core_mempool::TXN_INDEX_ESTIMATED_BYTES, counters, network::BroadcastPeerPriority};
 use aptos_crypto::HashValue;
-use aptos_types::{account_address::AccountAddress, transaction::{ReplayProtector, SignedTransaction}};
+use aptos_types::{
+    account_address::AccountAddress,
+    transaction::{ReplayProtector, SignedTransaction},
+};
 use serde::{Deserialize, Serialize};
 use std::{
     mem::size_of,
@@ -165,14 +168,16 @@ impl InsertionInfo {
 #[cfg(test)]
 mod test {
     use crate::{
-        core_mempool::{MempoolTransaction, AccountSequenceNumberInfo, TimelineState},
+        core_mempool::{AccountSequenceNumberInfo, MempoolTransaction, TimelineState},
         network::BroadcastPeerPriority,
     };
     use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, SigningKey, Uniform};
     use aptos_types::{
         account_address::AccountAddress,
         chain_id::ChainId,
-        transaction::{RawTransaction, Script, SignedTransaction, TransactionPayload, ReplayProtector},
+        transaction::{
+            RawTransaction, ReplayProtector, Script, SignedTransaction, TransactionPayload,
+        },
     };
     use std::time::{Duration, SystemTime};
 

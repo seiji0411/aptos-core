@@ -23,7 +23,10 @@ use crate::{
     proof::TransactionInfoListWithProof,
     state_store::{state_key::StateKey, state_value::StateValue},
     transaction::{
-        block_epilogue::BlockEndInfo, ChangeSet, EntryFunction, ExecutionStatus, Module, RawTransaction, ReplayProtector, Script, SignatureCheckedTransaction, SignedTransaction, Transaction, TransactionArgument, TransactionAuxiliaryData, TransactionInfo, TransactionListWithProof, TransactionPayload, TransactionExecutable, TransactionStatus, TransactionToCommit, Version, WriteSetPayload
+        block_epilogue::BlockEndInfo, ChangeSet, ExecutionStatus, Module, RawTransaction,
+        ReplayProtector, Script, SignatureCheckedTransaction, SignedTransaction, Transaction,
+        TransactionArgument, TransactionAuxiliaryData, TransactionInfo, TransactionListWithProof,
+        TransactionPayload, TransactionStatus, TransactionToCommit, Version, WriteSetPayload,
     },
     validator_info::ValidatorInfo,
     validator_signer::ValidatorSigner,
@@ -307,9 +310,7 @@ impl RawTransactionGen {
     ) -> RawTransaction {
         let sender_info = universe.get_account_info_mut(sender_index);
         let replay_protector = match self.nonce {
-            Some(nonce) => {
-                ReplayProtector::Nonce(nonce)
-            }
+            Some(nonce) => ReplayProtector::Nonce(nonce),
             None => {
                 let sequence_number = sender_info.sequence_number;
                 sender_info.sequence_number += 1;
@@ -378,7 +379,7 @@ impl RawTransaction {
 
 fn new_raw_transaction(
     sender: AccountAddress,
-    replay_protector: ReplayProtector,
+    _replay_protector: ReplayProtector,
     payload: TransactionPayload,
     max_gas_amount: u64,
     gas_unit_price: u64,

@@ -12,7 +12,9 @@ use crate::{
 pub use aptos_cached_packages::aptos_stdlib;
 use aptos_crypto::{ed25519::Ed25519PublicKey, HashValue};
 use aptos_global_constants::{GAS_UNIT_PRICE, MAX_GAS_AMOUNT};
-use aptos_types::transaction::{EntryFunction, Script, TransactionExtraConfig, TransactionPayloadV2};
+use aptos_types::transaction::{
+    EntryFunction, Script, TransactionExtraConfig, TransactionPayloadV2,
+};
 
 pub struct TransactionBuilder {
     sender: Option<AccountAddress>,
@@ -74,7 +76,14 @@ impl TransactionBuilder {
 
     pub fn has_nonce(&self) -> bool {
         match self.payload {
-            TransactionPayload::V2(TransactionPayloadV2::V1 { extra_config: TransactionExtraConfig::V1 { replay_protection_nonce, .. }, .. }) => replay_protection_nonce.is_some(),
+            TransactionPayload::V2(TransactionPayloadV2::V1 {
+                extra_config:
+                    TransactionExtraConfig::V1 {
+                        replay_protection_nonce,
+                        ..
+                    },
+                ..
+            }) => replay_protection_nonce.is_some(),
             _ => false,
         }
     }
@@ -83,7 +92,8 @@ impl TransactionBuilder {
         let sequence_number = if self.has_nonce() {
             u64::MAX
         } else {
-            self.sequence_number.expect("sequence number must have been set")
+            self.sequence_number
+                .expect("sequence number must have been set")
         };
         RawTransaction::new(
             self.sender.expect("sender must have been set"),

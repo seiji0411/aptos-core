@@ -3,7 +3,8 @@
 
 use super::{publishing::publish_util::Package, ReliableTransactionSubmitter};
 use crate::{
-    create_account_transaction, publishing::publish_util::PackageHandler, ReplayProtectionType, RootAccountHandle, TransactionGenerator, TransactionGeneratorCreator
+    create_account_transaction, publishing::publish_util::PackageHandler, ReplayProtectionType,
+    RootAccountHandle, TransactionGenerator, TransactionGeneratorCreator,
 };
 use aptos_logger::{error, info};
 use aptos_sdk::{

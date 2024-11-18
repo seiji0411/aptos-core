@@ -33,7 +33,9 @@ use aptos_types::{
     account_address::AccountAddress,
     mempool_status::MempoolStatusCode,
     transaction::{
-        EntryFunction, ExecutionStatus, MultisigTransactionPayload, RawTransaction, RawTransactionWithData, Script, SignedTransaction, TransactionExecutable, TransactionPayload, TransactionPayloadV2
+        EntryFunction, ExecutionStatus, MultisigTransactionPayload, RawTransaction,
+        RawTransactionWithData, Script, SignedTransaction, TransactionExecutable,
+        TransactionPayload, TransactionPayloadV2,
     },
     vm_status::StatusCode,
     AptosCoinType, CoinType,
@@ -1040,7 +1042,6 @@ impl TransactionsApi {
         ledger_info: &LedgerInfo,
         data: SubmitTransactionPost,
     ) -> Result<SignedTransaction, SubmitTransactionError> {
-
         let validate_script = |script: &Script| -> Result<(), SubmitTransactionError> {
             if script.code().is_empty() {
                 return Err(SubmitTransactionError::bad_request_with_code(
@@ -1065,9 +1066,10 @@ impl TransactionsApi {
             Ok(())
         };
 
-        let validate_entry_function = |entry_function: &EntryFunction| -> Result<(), SubmitTransactionError> {
-            TransactionsApi::validate_entry_function_payload_format(ledger_info, entry_function)
-        };
+        let validate_entry_function =
+            |entry_function: &EntryFunction| -> Result<(), SubmitTransactionError> {
+                TransactionsApi::validate_entry_function_payload_format(ledger_info, entry_function)
+            };
 
         match data {
             SubmitTransactionPost::Bcs(data) => {
@@ -1111,32 +1113,30 @@ impl TransactionsApi {
                     TransactionPayload::V2(TransactionPayloadV2::V1 {
                         executable,
                         extra_config,
-                    }) => {
-                        match executable {
-                            TransactionExecutable::Script(script) => {
-                                validate_script(script)?;
-                                if extra_config.is_multisig() {
-                                    return Err(SubmitTransactionError::bad_request_with_code(
-                                        "Script transaction payload must not be a multisig transaction",
-                                        AptosErrorCode::InvalidInput,
-                                        ledger_info,
-                                    ));
-                                }
-                            },
-                            TransactionExecutable::EntryFunction(entry_function) => {
-                                validate_entry_function(entry_function)?;
-                            },
-                            TransactionExecutable::Empty => {
-                                if !extra_config.is_multisig() {
-                                    return Err(SubmitTransactionError::bad_request_with_code(
-                                        "Empty transaction payload must be a multisig transaction",
-                                        AptosErrorCode::InvalidInput,
-                                        ledger_info,
-                                    ));
-                                }
+                    }) => match executable {
+                        TransactionExecutable::Script(script) => {
+                            validate_script(script)?;
+                            if extra_config.is_multisig() {
+                                return Err(SubmitTransactionError::bad_request_with_code(
+                                    "Script transaction payload must not be a multisig transaction",
+                                    AptosErrorCode::InvalidInput,
+                                    ledger_info,
+                                ));
                             }
-                        }
-                    }
+                        },
+                        TransactionExecutable::EntryFunction(entry_function) => {
+                            validate_entry_function(entry_function)?;
+                        },
+                        TransactionExecutable::Empty => {
+                            if !extra_config.is_multisig() {
+                                return Err(SubmitTransactionError::bad_request_with_code(
+                                    "Empty transaction payload must be a multisig transaction",
+                                    AptosErrorCode::InvalidInput,
+                                    ledger_info,
+                                ));
+                            }
+                        },
+                    },
                 }
                 // TODO: Verify script args?
 
@@ -1471,7 +1471,8 @@ impl TransactionsApi {
                     stats_key += FunctionStats::function_to_key(
                         entry_function.module(),
                         &entry_function.function().into(),
-                    ).as_str();
+                    )
+                    .as_str();
                 } else if let TransactionExecutable::Empty = executable {
                     stats_key += "unknown";
                 };

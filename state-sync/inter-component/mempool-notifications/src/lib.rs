@@ -7,7 +7,8 @@
 use aptos_types::{
     account_address::AccountAddress,
     transaction::{
-        use_case::{UseCaseAwareTransaction, UseCaseKey}, ReplayProtector, Transaction
+        use_case::{UseCaseAwareTransaction, UseCaseKey},
+        ReplayProtector, Transaction,
     },
 };
 use async_trait::async_trait;

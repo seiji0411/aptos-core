@@ -16,7 +16,9 @@ use aptos_types::{
     contract_event::ContractEvent,
     state_store::TStateView,
     transaction::{
-        signature_verified_transaction::SignatureVerifiedTransaction, BlockOutput, SignedTransaction, Transaction, TransactionExecutable, TransactionInfo, TransactionOutput, TransactionPayload, TransactionPayloadV2, Version
+        signature_verified_transaction::SignatureVerifiedTransaction, BlockOutput,
+        SignedTransaction, Transaction, TransactionExecutable, TransactionInfo, TransactionOutput,
+        TransactionPayload, TransactionPayloadV2, Version,
     },
     vm_status::VMStatus,
 };
@@ -141,11 +143,9 @@ impl AptosDebugger {
                         entry_func.ty_args().to_vec(),
                     ),
                     TransactionPayload::Multisig(..) => unimplemented!("not supported yet"),
-
                     TransactionPayload::V2(_) => {
                         unimplemented!("TransactionPayloadV2 is not supported")
                     },
-                    
                     // Deprecated.
                     TransactionPayload::ModuleBundle(..) => {
                         unreachable!("Module bundle payload has already been checked because before this function is called")
@@ -402,7 +402,7 @@ fn print_transaction_stats(sig_verified_txns: &[SignatureVerifiedTransaction], v
                                 txn.function().as_str()
                             ),
                             TransactionExecutable::Script(_) => "script".to_string(),
-                            TransactionExecutable::Empty => "empty".to_string()
+                            TransactionExecutable::Empty => "empty".to_string(),
                         }
                     },
                 })

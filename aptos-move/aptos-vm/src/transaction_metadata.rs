@@ -8,10 +8,10 @@ use aptos_types::{
     account_address::AccountAddress,
     chain_id::ChainId,
     transaction::{
-        user_transaction_context::UserTransactionContext, EntryFunction, Multisig, ReplayProtector, SignedTransaction, TransactionExecutable, TransactionPayload, TransactionPayloadV2
+        user_transaction_context::UserTransactionContext, EntryFunction, Multisig, ReplayProtector,
+        SignedTransaction, TransactionExecutable, TransactionPayload, TransactionPayloadV2,
     },
 };
-
 
 pub struct TransactionMetadata {
     pub sender: AccountAddress,
@@ -78,16 +78,21 @@ impl TransactionMetadata {
                 // else here, only `unreachable!` otherwise.
                 TransactionPayload::ModuleBundle(_) => vec![],
 
-                TransactionPayload::V2(TransactionPayloadV2::V1 { executable, extra_config }) => {
+                TransactionPayload::V2(TransactionPayloadV2::V1 {
+                    executable,
+                    extra_config,
+                }) => {
                     if extra_config.is_multisig() {
                         vec![]
                     } else {
                         match executable {
-                            TransactionExecutable::Script(s) => HashValue::sha3_256_of(s.code()).to_vec(),
-                            _ => vec![]
+                            TransactionExecutable::Script(s) => {
+                                HashValue::sha3_256_of(s.code()).to_vec()
+                            },
+                            _ => vec![],
                         }
                     }
-                }
+                },
             },
             script_size: match txn.payload() {
                 TransactionPayload::Script(s) => (s.code().len() as u64).into(),

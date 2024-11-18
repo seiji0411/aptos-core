@@ -94,7 +94,7 @@ impl Display for ReplayProtector {
             ReplayProtector::Nonce(nonce) => write!(f, "Nonce({})", nonce),
             ReplayProtector::SequenceNumber(sequence_number) => {
                 write!(f, "SequenceNumber({})", sequence_number)
-            }
+            },
         }
     }
 }
@@ -107,11 +107,11 @@ mod tests {
         let nonce = ReplayProtector::Nonce(1);
         let sequence_number = ReplayProtector::SequenceNumber(1);
         assert!(nonce < sequence_number);
-    
+
         let nonce = ReplayProtector::Nonce(2);
         let sequence_number = ReplayProtector::SequenceNumber(1);
         assert!(nonce < sequence_number);
-    
+
         let sequence_number1 = ReplayProtector::SequenceNumber(3);
         let sequence_number2 = ReplayProtector::SequenceNumber(4);
         assert!(sequence_number1 < sequence_number2);
@@ -254,45 +254,39 @@ impl RawTransaction {
         chain_id: ChainId,
     ) -> Self {
         match replay_protector {
-            ReplayProtector::SequenceNumber(sequence_number) => {
-                RawTransaction {
-                    sender,
-                    sequence_number,
-                    payload: TransactionPayload::V2(
-                        TransactionPayloadV2::V1 {
-                            executable,
-                            extra_config: TransactionExtraConfig::V1 {
-                                multisig_address,
-                                replay_protection_nonce: None,
-                            },
-                        },
-                    ),
-                    max_gas_amount,
-                    gas_unit_price,
-                    expiration_timestamp_secs,
-                    chain_id,
-                }
-            }
+            ReplayProtector::SequenceNumber(sequence_number) => RawTransaction {
+                sender,
+                sequence_number,
+                payload: TransactionPayload::V2(TransactionPayloadV2::V1 {
+                    executable,
+                    extra_config: TransactionExtraConfig::V1 {
+                        multisig_address,
+                        replay_protection_nonce: None,
+                    },
+                }),
+                max_gas_amount,
+                gas_unit_price,
+                expiration_timestamp_secs,
+                chain_id,
+            },
             ReplayProtector::Nonce(nonce) => {
                 RawTransaction {
                     sender,
                     // Question: Is it okay to set sequence_number to u64::MAX for orderless transactions?
                     sequence_number: u64::MAX,
-                    payload: TransactionPayload::V2(
-                        TransactionPayloadV2::V1 {
-                            executable,
-                            extra_config: TransactionExtraConfig::V1 {
-                                multisig_address,
-                                replay_protection_nonce: Some(nonce),
-                            },
+                    payload: TransactionPayload::V2(TransactionPayloadV2::V1 {
+                        executable,
+                        extra_config: TransactionExtraConfig::V1 {
+                            multisig_address,
+                            replay_protection_nonce: Some(nonce),
                         },
-                    ),
+                    }),
                     max_gas_amount,
                     gas_unit_price,
                     expiration_timestamp_secs,
                     chain_id,
                 }
-            }
+            },
         }
     }
 
@@ -455,7 +449,7 @@ impl RawTransaction {
                 } else {
                     ReplayProtector::SequenceNumber(self.sequence_number)
                 }
-            }
+            },
             _ => ReplayProtector::SequenceNumber(self.sequence_number),
         }
     }
@@ -541,7 +535,7 @@ pub enum TransactionPayloadV2 {
     V1 {
         executable: TransactionExecutable,
         extra_config: TransactionExtraConfig,
-    }
+    },
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -572,7 +566,7 @@ pub enum TransactionExtraConfig {
         // None for regular transactions
         // Some(nonce) for orderless transactions
         replay_protection_nonce: Option<u64>,
-    }
+    },
 }
 
 impl TransactionPayload {
@@ -586,11 +580,17 @@ impl TransactionPayload {
 
 impl TransactionExtraConfig {
     pub fn is_multisig(&self) -> bool {
-        matches!(self, Self::V1 { multisig_address: Some(_), replay_protection_nonce: _ })
+        matches!(self, Self::V1 {
+            multisig_address: Some(_),
+            replay_protection_nonce: _
+        })
     }
 
     pub fn is_orderless(&self) -> bool {
-        matches!(self, Self::V1 { multisig_address: _, replay_protection_nonce: Some(_) })
+        matches!(self, Self::V1 {
+            multisig_address: _,
+            replay_protection_nonce: Some(_)
+        })
     }
 
     pub fn multisig_address(&self) -> Option<AccountAddress> {

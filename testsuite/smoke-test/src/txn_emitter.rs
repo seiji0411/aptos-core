@@ -8,7 +8,9 @@ use crate::{
 };
 use anyhow::ensure;
 use aptos_forge::{
-    args::TransactionTypeArg, emitter::NumAccountsMode, AccountType, EmitJobMode, EmitJobRequest, EntryPoints, NodeExt, ReplayProtectionType, Result, Swarm, TransactionType, TxnEmitter, TxnStats, WorkflowProgress
+    args::TransactionTypeArg, emitter::NumAccountsMode, AccountType, EmitJobMode, EmitJobRequest,
+    EntryPoints, NodeExt, ReplayProtectionType, Result, Swarm, TransactionType, TxnEmitter,
+    TxnStats, WorkflowProgress,
 };
 use aptos_sdk::{transaction_builder::TransactionFactory, types::PeerId};
 use aptos_types::keyless::test_utils::{get_sample_esk, get_sample_exp_date, get_sample_jwt_token};

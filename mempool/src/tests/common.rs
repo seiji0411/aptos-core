@@ -12,7 +12,13 @@ use aptos_config::config::{NodeConfig, MAX_APPLICATION_MESSAGE_SIZE};
 use aptos_consensus_types::common::{TransactionInProgress, TransactionSummary};
 use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 use aptos_types::{
-    account_address::AccountAddress, chain_id::ChainId, mempool_status::MempoolStatusCode, transaction::{RawTransaction, ReplayProtector, Script, SignedTransaction, TransactionArgument, TransactionExecutable},
+    account_address::AccountAddress,
+    chain_id::ChainId,
+    mempool_status::MempoolStatusCode,
+    transaction::{
+        RawTransaction, ReplayProtector, Script, SignedTransaction, TransactionArgument,
+        TransactionExecutable,
+    },
 };
 use once_cell::sync::Lazy;
 use rand::{rngs::StdRng, SeedableRng};

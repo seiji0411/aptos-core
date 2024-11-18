@@ -40,7 +40,7 @@ impl UseCaseAwareTransaction for SignedTransaction {
         use UseCaseKey::*;
 
         match self.payload() {
-            // Question: MultiSig contains an entry function too. Why isn't it handled like the entry function?  
+            // Question: MultiSig contains an entry function too. Why isn't it handled like the entry function?
             Script(_) | ModuleBundle(_) | Multisig(_) => Others,
             EntryFunction(entry_fun) => {
                 let module_id = entry_fun.module();
@@ -50,19 +50,17 @@ impl UseCaseAwareTransaction for SignedTransaction {
                     ContractAddress(*module_id.address())
                 }
             },
-            V2(
-                TransactionPayloadV2::V1 {
-                    executable: TransactionExecutable::EntryFunction(entry_fun),
-                    extra_config: _,
+            V2(TransactionPayloadV2::V1 {
+                executable: TransactionExecutable::EntryFunction(entry_fun),
+                extra_config: _,
+            }) => {
+                let module_id = entry_fun.module();
+                if module_id.address().is_special() {
+                    Platform
+                } else {
+                    ContractAddress(*module_id.address())
                 }
-            ) => {
-                    let module_id = entry_fun.module();
-                    if module_id.address().is_special() {
-                        Platform
-                    } else {
-                        ContractAddress(*module_id.address())
-                    }
-                },
+            },
             _ => Others,
         }
     }
