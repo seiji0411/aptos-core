@@ -112,6 +112,15 @@ FungibleAssetMint	10	0.954	1.038	236.3
 IncGlobalMilestoneAggV2 { milestone_every: 1 }	10	0.960	1.047	32.9
 IncGlobalMilestoneAggV2 { milestone_every: 2 }	10	0.971	1.066	18.1
 EmitEvents { count: 1000 }	10	0.969	1.052	8615.5
+VectorTrimAppend { vec_len: 3000, element_len: 1, index: 0, repeats: 0 }	6	0.925	1.001	22909
+VectorTrimAppend { vec_len: 3000, element_len: 1, index: 100, repeats: 1000 }	6	0.925	1.001	47073
+VectorTrimAppend { vec_len: 3000, element_len: 1, index: 2990, repeats: 1000 }	6	0.925	1.001	34788
+VectorRemoveInsert { vec_len: 3000, element_len: 1, index: 100, repeats: 1000 }	6	0.925	1.001	45273
+VectorRemoveInsert { vec_len: 3000, element_len: 1, index: 2998, repeats: 1000 }	6	0.925	1.001	36859
+VectorRangeMove { vec_len: 3000, element_len: 1, index: 1000, move_len: 500, repeats: 1000 }	6	0.925	1.001	65311
+VectorTrimAppend { vec_len: 100, element_len: 100, index: 0, repeats: 0 }	6	0.925	1.001	875
+VectorTrimAppend { vec_len: 100, element_len: 100, index: 10, repeats: 1000 }	6	0.925	1.001	13366
+VectorRangeMove { vec_len: 100, element_len: 100, index: 50, move_len: 10, repeats: 1000 }	6	0.925	1.001	7098
 ";
 
 struct CalibrationInfo {
@@ -202,6 +211,66 @@ fn main() {
         EntryPoints::IncGlobalMilestoneAggV2 { milestone_every: 1 },
         EntryPoints::IncGlobalMilestoneAggV2 { milestone_every: 2 },
         EntryPoints::EmitEvents { count: 1000 },
+        // long vectors with small elements
+        EntryPoints::VectorTrimAppend {
+            // baseline, only vector creation
+            vec_len: 3000,
+            element_len: 1,
+            index: 0,
+            repeats: 0,
+        },
+        EntryPoints::VectorTrimAppend {
+            vec_len: 3000,
+            element_len: 1,
+            index: 100,
+            repeats: 1000,
+        },
+        EntryPoints::VectorTrimAppend {
+            vec_len: 3000,
+            element_len: 1,
+            index: 2990,
+            repeats: 1000,
+        },
+        EntryPoints::VectorRemoveInsert {
+            vec_len: 3000,
+            element_len: 1,
+            index: 100,
+            repeats: 1000,
+        },
+        EntryPoints::VectorRemoveInsert {
+            vec_len: 3000,
+            element_len: 1,
+            index: 2998,
+            repeats: 1000,
+        },
+        EntryPoints::VectorRangeMove {
+            vec_len: 3000,
+            element_len: 1,
+            index: 1000,
+            move_len: 500,
+            repeats: 1000,
+        },
+        // vectors with large elements
+        EntryPoints::VectorTrimAppend {
+            // baseline, only vector creation
+            vec_len: 100,
+            element_len: 100,
+            index: 0,
+            repeats: 0,
+        },
+        EntryPoints::VectorTrimAppend {
+            vec_len: 100,
+            element_len: 100,
+            index: 10,
+            repeats: 1000,
+        },
+        EntryPoints::VectorRangeMove {
+            vec_len: 100,
+            element_len: 100,
+            index: 50,
+            move_len: 10,
+            repeats: 1000,
+        },
     ];
 
     let mut failures = Vec::new();
