@@ -23,10 +23,7 @@ use crate::{
     proof::TransactionInfoListWithProof,
     state_store::{state_key::StateKey, state_value::StateValue},
     transaction::{
-        block_epilogue::BlockEndInfo, ChangeSet, ExecutionStatus, Module, RawTransaction,
-        ReplayProtector, Script, SignatureCheckedTransaction, SignedTransaction, Transaction,
-        TransactionArgument, TransactionAuxiliaryData, TransactionInfo, TransactionListWithProof,
-        TransactionPayload, TransactionStatus, TransactionToCommit, Version, WriteSetPayload,
+        block_epilogue::BlockEndInfo, ChangeSet, EntryFunction, ExecutionStatus, Module, Multisig, MultisigTransactionPayload, RawTransaction, ReplayProtector, Script, SignatureCheckedTransaction, SignedTransaction, Transaction, TransactionArgument, TransactionAuxiliaryData, TransactionExecutable, TransactionExtraConfig, TransactionInfo, TransactionListWithProof, TransactionPayload, TransactionPayloadV2, TransactionStatus, TransactionToCommit, Version, WriteSetPayload
     },
     validator_info::ValidatorInfo,
     validator_signer::ValidatorSigner,
@@ -45,7 +42,7 @@ use aptos_crypto::{
 };
 use arr_macro::arr;
 use bytes::Bytes;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::{identifier::Identifier, language_storage::{ModuleId, TypeTag}};
 use proptest::{
     collection::{vec, SizeRange},
     option,
@@ -433,11 +430,11 @@ impl Arbitrary for RawTransaction {
 impl SignatureCheckedTransaction {
     // This isn't an Arbitrary impl because this doesn't generate *any* possible SignedTransaction,
     // just one kind of them.
-    pub fn script_strategy(
-        keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
-    ) -> impl Strategy<Value = Self> {
-        Self::strategy_impl(keypair_strategy, TransactionPayload::script_strategy())
-    }
+    // pub fn script_strategy(
+    //     keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+    // ) -> impl Strategy<Value = Self> {
+    //     Self::strategy_impl(keypair_strategy, TransactionPayload::script_strategy())
+    // }
 
     fn strategy_impl(
         keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
@@ -510,7 +507,6 @@ impl Arbitrary for SignedTransaction {
     }
 }
 
-#[cfg(ignore_errors)]
 impl Arbitrary for TransactionExecutable {
     type Parameters = ();
     type Strategy = BoxedStrategy<Self>;
@@ -524,9 +520,22 @@ impl Arbitrary for TransactionExecutable {
     }
 }
 
-impl TransactionPayload {
-    pub fn script_strategy() -> impl Strategy<Value = Self> {
-        any::<Script>().prop_map(TransactionPayload::Script)
+impl Arbitrary for TransactionExtraConfig {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        (
+            any::<Option<AccountAddress>>(),
+            any::<Option<u64>>(),
+        )
+        .prop_map(|(multisig_address, replay_protection_nonce)| {
+            TransactionExtraConfig::V1 {
+                multisig_address,
+                replay_protection_nonce,
+            }
+        })
+        .boxed()
     }
 }
 
@@ -558,7 +567,10 @@ impl Arbitrary for TransactionPayload {
 
     fn arbitrary_with(_args: ()) -> Self::Strategy {
         prop_oneof![
-            4 => Self::script_strategy(),
+            any::<EntryFunction>().prop_map(TransactionPayload::EntryFunction),
+            any::<Script>().prop_map(TransactionPayload::Script),
+            any::<Multisig>().prop_map(TransactionPayload::Multisig),
+            any::<TransactionPayloadV2>().prop_map(TransactionPayload::V2),
         ]
         .boxed()
     }
@@ -581,19 +593,68 @@ impl Arbitrary for Script {
     }
 }
 
-#[cfg(ignore_errors)]
 impl Arbitrary for EntryFunction {
     type Parameters = ();
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_args: ()) -> Self::Strategy {
         // XXX This should eventually be an actually valid program, maybe?
-        // The vector sizes are picked out of thin air.
         (
+            any::<AccountAddress>(), // module address
+            any::<String>(), // module name
+            any::<String>(), // function name
             vec(any::<TypeTag>(), 0..4),
-            vec(any::<TransactionArgument>(), 0..10),
+            vec(vec(any::<u8>(), 0..100), 0..4),
         )
-            .prop_map(|(func, ty_args, args)| EntryFunction::new(module, function, ty_args, args))
+            .prop_map(|(module_address, module_name, func_name, type_tags, args)| 
+                EntryFunction::new(
+                    ModuleId::new(module_address, Identifier::new(module_name.into_boxed_str()).unwrap()),
+                    Identifier::new(func_name.into_boxed_str()).unwrap(),
+                    type_tags,
+                    args,
+                )
+            )
+            .boxed()
+    }
+}
+
+impl Arbitrary for Multisig {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        (
+            any::<AccountAddress>(),
+            any::<bool>(),
+            any::<EntryFunction>(),
+        )
+            .prop_map(|(multisig_address, include_payload, entry_func)| 
+                Multisig {
+                    multisig_address,
+                    transaction_payload: if include_payload {
+                        Some(MultisigTransactionPayload::EntryFunction(entry_func))
+                    } else {
+                        None
+                    },
+                },
+            )
+            .boxed()
+    }
+}
+
+impl Arbitrary for TransactionPayloadV2 {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        (
+            any::<TransactionExecutable>(),
+            any::<TransactionExtraConfig>(),
+        )
+            .prop_map(|(executable, extra_config)| TransactionPayloadV2::V1 {
+                executable,
+                extra_config,
+            })
             .boxed()
     }
 }
