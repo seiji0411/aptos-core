@@ -143,8 +143,24 @@ impl AptosDebugger {
                         entry_func.ty_args().to_vec(),
                     ),
                     TransactionPayload::Multisig(..) => unimplemented!("not supported yet"),
-                    TransactionPayload::V2(_) => {
-                        unimplemented!("TransactionPayloadV2 is not supported")
+                    TransactionPayload::V2(TransactionPayloadV2::V1 {executable, extra_config: _}) => {
+                        // Question: Is this correct? Should we add new call frame for orderless transactions?
+                        match executable {
+                            TransactionExecutable::EntryFunction(entry_func) => {
+                                GasProfiler::new_function(
+                                    gas_meter,
+                                    entry_func.module().clone(),
+                                    entry_func.function().to_owned(),
+                                    entry_func.ty_args().to_vec(),
+                                )
+                            },
+                            TransactionExecutable::Script(_) => {
+                                GasProfiler::new_script(gas_meter)
+                            },
+                            TransactionExecutable::Empty => {
+                                unimplemented!("not supported yet")
+                            },
+                        }
                     },
                     // Deprecated.
                     TransactionPayload::ModuleBundle(..) => {
