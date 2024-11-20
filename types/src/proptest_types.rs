@@ -23,7 +23,12 @@ use crate::{
     proof::TransactionInfoListWithProof,
     state_store::{state_key::StateKey, state_value::StateValue},
     transaction::{
-        block_epilogue::BlockEndInfo, ChangeSet, EntryFunction, ExecutionStatus, Module, Multisig, MultisigTransactionPayload, RawTransaction, ReplayProtector, Script, SignatureCheckedTransaction, SignedTransaction, Transaction, TransactionArgument, TransactionAuxiliaryData, TransactionExecutable, TransactionExtraConfig, TransactionInfo, TransactionListWithProof, TransactionPayload, TransactionPayloadV2, TransactionStatus, TransactionToCommit, Version, WriteSetPayload
+        block_epilogue::BlockEndInfo, ChangeSet, EntryFunction, ExecutionStatus, Module, Multisig,
+        MultisigTransactionPayload, RawTransaction, ReplayProtector, Script,
+        SignatureCheckedTransaction, SignedTransaction, Transaction, TransactionArgument,
+        TransactionAuxiliaryData, TransactionExecutable, TransactionExtraConfig, TransactionInfo,
+        TransactionListWithProof, TransactionPayload, TransactionPayloadV2, TransactionStatus,
+        TransactionToCommit, Version, WriteSetPayload,
     },
     validator_info::ValidatorInfo,
     validator_signer::ValidatorSigner,
@@ -42,7 +47,10 @@ use aptos_crypto::{
 };
 use arr_macro::arr;
 use bytes::Bytes;
-use move_core_types::{identifier::Identifier, language_storage::{ModuleId, TypeTag}};
+use move_core_types::{
+    identifier::Identifier,
+    language_storage::{ModuleId, TypeTag},
+};
 use proptest::{
     collection::{vec, SizeRange},
     option,
@@ -296,7 +304,6 @@ pub struct RawTransactionGen {
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_time_secs: u64,
-    nonce: Option<u64>,
 }
 
 impl RawTransactionGen {
@@ -306,17 +313,29 @@ impl RawTransactionGen {
         universe: &mut AccountInfoUniverse,
     ) -> RawTransaction {
         let sender_info = universe.get_account_info_mut(sender_index);
-        let replay_protector = match self.nonce {
-            Some(nonce) => ReplayProtector::Nonce(nonce),
-            None => {
-                let sequence_number = sender_info.sequence_number;
-                sender_info.sequence_number += 1;
-                ReplayProtector::SequenceNumber(sequence_number)
-            },
+        let nonce = match &self.payload {
+            TransactionPayload::V2(TransactionPayloadV2::V1 {
+                extra_config:
+                    TransactionExtraConfig::V1 {
+                        replay_protection_nonce,
+                        ..
+                    },
+                ..
+            }) => *replay_protection_nonce,
+            _ => None,
         };
+
+        let sequence_number = if nonce.is_none() {
+            let sequence_number = sender_info.sequence_number;
+            sender_info.sequence_number += 1;
+            sequence_number
+        } else {
+            u64::MAX
+        };
+
         new_raw_transaction(
             sender_info.address,
-            replay_protector,
+            sequence_number,
             self.payload,
             self.max_gas_amount,
             self.gas_unit_price,
@@ -346,7 +365,7 @@ impl RawTransaction {
         // XXX what other constraints do these need to obey?
         (
             address_strategy,
-            any::<ReplayProtector>(),
+            any::<u64>(),
             payload_strategy,
             any::<u64>(),
             any::<u64>(),
@@ -355,7 +374,7 @@ impl RawTransaction {
             .prop_map(
                 |(
                     sender,
-                    replay_protector,
+                    sequence_number,
                     payload,
                     max_gas_amount,
                     gas_unit_price,
@@ -363,7 +382,7 @@ impl RawTransaction {
                 )| {
                     new_raw_transaction(
                         sender,
-                        replay_protector,
+                        sequence_number,
                         payload,
                         max_gas_amount,
                         gas_unit_price,
@@ -376,7 +395,7 @@ impl RawTransaction {
 
 fn new_raw_transaction(
     sender: AccountAddress,
-    _replay_protector: ReplayProtector,
+    sequence_number: u64,
     payload: TransactionPayload,
     max_gas_amount: u64,
     gas_unit_price: u64,
@@ -387,34 +406,15 @@ fn new_raw_transaction(
         TransactionPayload::ModuleBundle(_) => {
             unreachable!("Module bundle payload has been removed")
         },
-        TransactionPayload::Script(script) => RawTransaction::new_script(
+        _ => RawTransaction::new(
             sender,
-            0,
-            script,
+            sequence_number,
+            payload,
             max_gas_amount,
             gas_unit_price,
             expiration_time_secs,
             chain_id,
         ),
-        TransactionPayload::EntryFunction(script_fn) => RawTransaction::new_entry_function(
-            sender,
-            0,
-            script_fn,
-            max_gas_amount,
-            gas_unit_price,
-            expiration_time_secs,
-            chain_id,
-        ),
-        TransactionPayload::Multisig(multisig) => RawTransaction::new_multisig(
-            sender,
-            0,
-            multisig,
-            max_gas_amount,
-            gas_unit_price,
-            expiration_time_secs,
-            chain_id,
-        ),
-        _ => unimplemented!(),
     }
 }
 
@@ -428,14 +428,6 @@ impl Arbitrary for RawTransaction {
 }
 
 impl SignatureCheckedTransaction {
-    // This isn't an Arbitrary impl because this doesn't generate *any* possible SignedTransaction,
-    // just one kind of them.
-    // pub fn script_strategy(
-    //     keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
-    // ) -> impl Strategy<Value = Self> {
-    //     Self::strategy_impl(keypair_strategy, TransactionPayload::script_strategy())
-    // }
-
     fn strategy_impl(
         keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
         payload_strategy: impl Strategy<Value = TransactionPayload>,
@@ -525,17 +517,14 @@ impl Arbitrary for TransactionExtraConfig {
     type Strategy = BoxedStrategy<Self>;
 
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        (
-            any::<Option<AccountAddress>>(),
-            any::<Option<u64>>(),
-        )
-        .prop_map(|(multisig_address, replay_protection_nonce)| {
-            TransactionExtraConfig::V1 {
-                multisig_address,
-                replay_protection_nonce,
-            }
-        })
-        .boxed()
+        (any::<Option<AccountAddress>>(), any::<Option<u64>>())
+            .prop_map(
+                |(multisig_address, replay_protection_nonce)| TransactionExtraConfig::V1 {
+                    multisig_address,
+                    replay_protection_nonce,
+                },
+            )
+            .boxed()
     }
 }
 
@@ -601,18 +590,23 @@ impl Arbitrary for EntryFunction {
         // XXX This should eventually be an actually valid program, maybe?
         (
             any::<AccountAddress>(), // module address
-            any::<String>(), // module name
-            any::<String>(), // function name
+            any::<String>(),         // module name
+            any::<String>(),         // function name
             vec(any::<TypeTag>(), 0..4),
             vec(vec(any::<u8>(), 0..100), 0..4),
         )
-            .prop_map(|(module_address, module_name, func_name, type_tags, args)| 
-                EntryFunction::new(
-                    ModuleId::new(module_address, Identifier::new(module_name.into_boxed_str()).unwrap()),
-                    Identifier::new(func_name.into_boxed_str()).unwrap(),
-                    type_tags,
-                    args,
-                )
+            .prop_map(
+                |(module_address, module_name, func_name, type_tags, args)| {
+                    EntryFunction::new(
+                        ModuleId::new(
+                            module_address,
+                            Identifier::new(module_name.into_boxed_str()).unwrap(),
+                        ),
+                        Identifier::new(func_name.into_boxed_str()).unwrap(),
+                        type_tags,
+                        args,
+                    )
+                },
             )
             .boxed()
     }
@@ -628,16 +622,14 @@ impl Arbitrary for Multisig {
             any::<bool>(),
             any::<EntryFunction>(),
         )
-            .prop_map(|(multisig_address, include_payload, entry_func)| 
-                Multisig {
-                    multisig_address,
-                    transaction_payload: if include_payload {
-                        Some(MultisigTransactionPayload::EntryFunction(entry_func))
-                    } else {
-                        None
-                    },
+            .prop_map(|(multisig_address, include_payload, entry_func)| Multisig {
+                multisig_address,
+                transaction_payload: if include_payload {
+                    Some(MultisigTransactionPayload::EntryFunction(entry_func))
+                } else {
+                    None
                 },
-            )
+            })
             .boxed()
     }
 }
