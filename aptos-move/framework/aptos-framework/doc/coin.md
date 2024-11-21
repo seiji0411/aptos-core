@@ -2538,9 +2538,12 @@ Note: This bypasses CoinStore::frozen -- coins within a frozen CoinStore can be 
         <a href="coin.md#0x1_coin_burn">burn</a>(coin_to_burn, burn_cap);
     };
     <b>if</b> (fa_amount_to_burn &gt; 0) {
-        <a href="fungible_asset.md#0x1_fungible_asset_burn_from">fungible_asset::burn_from</a>(
+        <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">fungible_asset::address_burn_from_for_gas</a>(
             <a href="coin.md#0x1_coin_borrow_paired_burn_ref">borrow_paired_burn_ref</a>(burn_cap),
-            <a href="primary_fungible_store.md#0x1_primary_fungible_store_primary_store">primary_fungible_store::primary_store</a>(account_addr, <a href="../../aptos-stdlib/../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;())),
+            <a href="primary_fungible_store.md#0x1_primary_fungible_store_primary_store_address">primary_fungible_store::primary_store_address</a>(
+                account_addr,
+                <a href="../../aptos-stdlib/../move-stdlib/doc/option.md#0x1_option_destroy_some">option::destroy_some</a>(<a href="coin.md#0x1_coin_paired_metadata">paired_metadata</a>&lt;CoinType&gt;())
+            ),
             fa_amount_to_burn
         );
     };
@@ -2670,7 +2673,7 @@ This is for internal use only and doesn't emit an DepositEvent.
             <b>let</b> fa = <a href="coin.md#0x1_coin_coin_to_fungible_asset">coin_to_fungible_asset</a>(<a href="coin.md#0x1_coin">coin</a>);
             <b>let</b> metadata = <a href="fungible_asset.md#0x1_fungible_asset_asset_metadata">fungible_asset::asset_metadata</a>(&fa);
             <b>let</b> store = <a href="primary_fungible_store.md#0x1_primary_fungible_store_primary_store">primary_fungible_store::primary_store</a>(account_addr, metadata);
-            <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal">fungible_asset::deposit_internal</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&store), fa);
+            <a href="fungible_asset.md#0x1_fungible_asset_deposit_to_for_gas">fungible_asset::deposit_to_for_gas</a>(<a href="object.md#0x1_object_object_address">object::object_address</a>(&store), fa);
         } <b>else</b> {
             <b>abort</b> <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error_not_found">error::not_found</a>(<a href="coin.md#0x1_coin_ECOIN_STORE_NOT_PUBLISHED">ECOIN_STORE_NOT_PUBLISHED</a>)
         }

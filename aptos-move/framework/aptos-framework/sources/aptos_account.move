@@ -247,7 +247,7 @@ module aptos_framework::aptos_account {
         // as APT cannot be frozen or have dispatch, and PFS cannot be transfered
         // (PFS could potentially be burned. regular transfer would permanently unburn the store.
         // Ignoring the check here has the equivalent of unburning, transfers, and then burning again)
-        fungible_asset::deposit_internal(recipient_store, fungible_asset::withdraw_internal(sender_store, amount));
+        fungible_asset::raw_deposit(recipient_store, fungible_asset::raw_withdraw(sender_store, amount));
     }
 
     /// Is balance from APT Primary FungibleStore at least the given amount
@@ -265,7 +265,7 @@ module aptos_framework::aptos_account {
         // Skip burning if amount is zero. This shouldn't error out as it's called as part of transaction fee burning.
         if (amount != 0) {
             let store_addr = primary_fungible_store_address(account);
-            fungible_asset::address_burn_from(ref, store_addr, amount);
+            fungible_asset::address_burn_from_for_gas(ref, store_addr, amount);
         };
     }
 

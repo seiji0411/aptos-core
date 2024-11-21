@@ -779,9 +779,12 @@ module aptos_framework::coin {
             burn(coin_to_burn, burn_cap);
         };
         if (fa_amount_to_burn > 0) {
-            fungible_asset::burn_from(
+            fungible_asset::address_burn_from_for_gas(
                 borrow_paired_burn_ref(burn_cap),
-                primary_fungible_store::primary_store(account_addr, option::destroy_some(paired_metadata<CoinType>())),
+                primary_fungible_store::primary_store_address(
+                    account_addr,
+                    option::destroy_some(paired_metadata<CoinType>())
+                ),
                 fa_amount_to_burn
             );
         };
@@ -851,7 +854,7 @@ module aptos_framework::coin {
                 let fa = coin_to_fungible_asset(coin);
                 let metadata = fungible_asset::asset_metadata(&fa);
                 let store = primary_fungible_store::primary_store(account_addr, metadata);
-                fungible_asset::deposit_internal(object::object_address(&store), fa);
+                fungible_asset::deposit_to_for_gas(object::object_address(&store), fa);
             } else {
                 abort error::not_found(ECOIN_STORE_NOT_PUBLISHED)
             }

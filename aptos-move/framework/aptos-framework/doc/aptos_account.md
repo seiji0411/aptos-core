@@ -707,7 +707,7 @@ to transfer APT) - if we want to allow APT PFS without account itself
     // <b>as</b> APT cannot be frozen or have dispatch, and PFS cannot be transfered
     // (PFS could potentially be burned. regular transfer would permanently unburn the store.
     // Ignoring the check here <b>has</b> the equivalent of unburning, transfers, and then burning again)
-    <a href="fungible_asset.md#0x1_fungible_asset_deposit_internal">fungible_asset::deposit_internal</a>(recipient_store, <a href="fungible_asset.md#0x1_fungible_asset_withdraw_internal">fungible_asset::withdraw_internal</a>(sender_store, amount));
+    <a href="fungible_asset.md#0x1_fungible_asset_raw_deposit">fungible_asset::raw_deposit</a>(recipient_store, <a href="fungible_asset.md#0x1_fungible_asset_raw_withdraw">fungible_asset::raw_withdraw</a>(sender_store, amount));
 }
 </code></pre>
 
@@ -765,7 +765,7 @@ Burn from APT Primary FungibleStore
     // Skip burning <b>if</b> amount is zero. This shouldn't <a href="../../aptos-stdlib/../move-stdlib/doc/error.md#0x1_error">error</a> out <b>as</b> it's called <b>as</b> part of transaction fee burning.
     <b>if</b> (amount != 0) {
         <b>let</b> store_addr = <a href="aptos_account.md#0x1_aptos_account_primary_fungible_store_address">primary_fungible_store_address</a>(<a href="account.md#0x1_account">account</a>);
-        <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from">fungible_asset::address_burn_from</a>(ref, store_addr, amount);
+        <a href="fungible_asset.md#0x1_fungible_asset_address_burn_from_for_gas">fungible_asset::address_burn_from_for_gas</a>(ref, store_addr, amount);
     };
 }
 </code></pre>
