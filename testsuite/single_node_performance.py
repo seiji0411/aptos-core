@@ -170,13 +170,16 @@ CALIBRATION = """
 no-op	1	VM	6	0.938	1.019	38925.3
 no-op	1000	VM	6	0.943	1.019	36444.6
 apt-fa-transfer	1	VM	6	0.927	1.018	26954.7
+apt-fa-transfer	1	NativeVM	6	0.927	1.018	35259.7
 account-generation	1	VM	6	0.96	1.02	20606.2
+account-generation	1	NativeVM	6	0.96	1.02	25731.2
 account-resource32-b	1	VM	6	0.94	1.026	34260.4
 modify-global-resource	1	VM	6	0.993	1.021	2260.5
 modify-global-resource	100	VM	6	0.982	1.02	33129.7
 publish-package	1	VM	6	0.983	1.012	1672.6
 mix_publish_transfer	1	VM	6	0.972	1.044	20832.8
 batch100-transfer	1	VM	6	0.953	1.024	645.1
+batch100-transfer	1	NativeVM	6	0.953	1.024	645.1
 vector-picture30k	1	VM	6	0.992	1.039	103.6
 vector-picture30k	100	VM	6	0.913	1.015	1831.5
 smart-table-picture30-k-with200-change	1	VM	6	0.976	1.034	16.1
@@ -220,7 +223,6 @@ TESTS = [
     RunGroupConfig(key=RunGroupKey("no-op", module_working_set_size=1000), included_in=LAND_BLOCKING_AND_C),
     RunGroupConfig(key=RunGroupKey("apt-fa-transfer"), included_in=LAND_BLOCKING_AND_C | Flow.REPRESENTATIVE | Flow.MAINNET),
     RunGroupConfig(key=RunGroupKey("apt-fa-transfer", executor_type="NativeVM"), included_in=Flow.CONTINUOUS),
-    RunGroupConfig(key=RunGroupKey("apt-fa-transfer", executor_type="AptosVMSpeculative"), included_in=Flow.CONTINUOUS),
     RunGroupConfig(key=RunGroupKey("account-generation"), included_in=LAND_BLOCKING_AND_C | Flow.REPRESENTATIVE | Flow.MAINNET),
     RunGroupConfig(key=RunGroupKey("account-generation", executor_type="NativeVM"), included_in=Flow.CONTINUOUS),
     RunGroupConfig(key=RunGroupKey("account-resource32-b"), included_in=Flow.CONTINUOUS),
