@@ -129,7 +129,6 @@ MapInsertRemove { len: 100, repeats: 100, use_simple_map: false }	6	0.925	1.001	
 MapInsertRemove { len: 100, repeats: 100, use_simple_map: true }	6	0.925	1.001	30962
 MapInsertRemove { len: 1000, repeats: 0, use_simple_map: false }	6	0.925	1.001	66878
 MapInsertRemove { len: 1000, repeats: 100, use_simple_map: false }	6	0.925	1.001	79826
->>>>>>> aad8851b1a ([move-stdlib] Introduce efficient OrderedMap implementation)
 ";
 
 struct CalibrationInfo {
