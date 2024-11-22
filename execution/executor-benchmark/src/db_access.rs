@@ -10,7 +10,7 @@ use aptos_types::{
         FungibleStoreResource, ObjectCoreResource, ObjectGroupResource, TypeInfoResource,
     },
     event::{EventHandle, EventKey},
-    state_store::{state_key::StateKey, StateView},
+    state_store::{state_key::StateKey, StateView, TStateView},
     write_set::TOTAL_SUPPLY_STATE_KEY,
     AptosCoinType, CoinType,
 };
@@ -22,7 +22,6 @@ use move_core_types::{
 };
 use serde::de::DeserializeOwned;
 use std::{collections::BTreeMap, str::FromStr};
-use aptos_types::state_store::TStateView;
 
 pub struct CommonStructTags {
     pub account: StructTag,
@@ -130,7 +129,7 @@ impl DbAccessUtil {
                 &ObjectGroupResource::struct_tag(),
             ),
         )
-            .expect("account must exist in data store");
+        .expect("account must exist in data store");
         let group: Option<BTreeMap<StructTag, Vec<u8>>> = bytes_opt
             .map(|bytes| bcs::from_bytes(&bytes))
             .transpose()

@@ -183,29 +183,29 @@ fn get_balance(account: &AccountAddress, db: &DbReaderWriter) -> u64 {
         .map(|x| x.coin())
         .unwrap_or(0)
         + {
-        let bytes_opt = TStateView::get_state_value_bytes(
-            &db_state_view,
-            &StateKey::resource_group(
-                &get_apt_primary_store_address(*account),
-                &ObjectGroupResource::struct_tag(),
-            ),
-        )
+            let bytes_opt = TStateView::get_state_value_bytes(
+                &db_state_view,
+                &StateKey::resource_group(
+                    &get_apt_primary_store_address(*account),
+                    &ObjectGroupResource::struct_tag(),
+                ),
+            )
             .expect("account must exist in data store");
 
-        let group: Option<BTreeMap<StructTag, Vec<u8>>> = bytes_opt
-            .map(|bytes| bcs::from_bytes(&bytes))
-            .transpose()
-            .unwrap();
-        group
-            .and_then(|g| {
-                g.get(&FungibleStoreResource::struct_tag())
-                    .map(|b| bcs::from_bytes(b))
-            })
-            .transpose()
-            .unwrap()
-            .map(|x: FungibleStoreResource| x.balance())
-            .unwrap_or(0)
-    }
+            let group: Option<BTreeMap<StructTag, Vec<u8>>> = bytes_opt
+                .map(|bytes| bcs::from_bytes(&bytes))
+                .transpose()
+                .unwrap();
+            group
+                .and_then(|g| {
+                    g.get(&FungibleStoreResource::struct_tag())
+                        .map(|b| bcs::from_bytes(b))
+                })
+                .transpose()
+                .unwrap()
+                .map(|x: FungibleStoreResource| x.balance())
+                .unwrap_or(0)
+        }
 }
 
 fn get_configuration(db: &DbReaderWriter) -> ConfigurationResource {

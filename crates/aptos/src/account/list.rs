@@ -89,15 +89,7 @@ impl CliCommand<Vec<serde_json::Value>> for ListAccount {
         let client = self.rest_options.client(&self.profile_options)?;
         let response = match self.query {
             ListQuery::Balance => vec![
-                client
-                    .get_account_resource(
-                        account,
-                        "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>",
-                    )
-                    .await?
-                    .into_inner()
-                    .unwrap()
-                    .data,
+                serde_json::Value::Number(client.view_apt_account_balance(account).await?.into_inner().into())
             ],
             ListQuery::Modules => client
                 .get_account_modules(account)
