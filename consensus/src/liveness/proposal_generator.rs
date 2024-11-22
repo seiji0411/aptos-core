@@ -35,6 +35,7 @@ use aptos_infallible::Mutex;
 use aptos_logger::{error, sample, sample::SampleRate, warn};
 use aptos_types::{on_chain_config::ValidatorTxnConfig, validator_txn::ValidatorTransaction};
 use aptos_validator_transaction_pool as vtxn_pool;
+use dashmap::DashMap;
 use futures::future::BoxFuture;
 use itertools::Itertools;
 use std::{
@@ -264,13 +265,13 @@ pub struct ProposalGenerator {
     pipeline_backpressure_config: PipelineBackpressureConfig,
     chain_health_backoff_config: ChainHealthBackoffConfig,
 
-    // Last round that a proposal was generated
-    last_round_generated: Mutex<Round>,
     quorum_store_enabled: bool,
     vtxn_config: ValidatorTxnConfig,
 
     allow_batches_without_pos_in_proposal: bool,
     opt_qs_payload_param_provider: Arc<dyn TOptQSPullParamsProvider>,
+
+    last_proposed_proposal: Arc<Mutex<Option<(BlockData, bool)>>>,
 }
 
 impl ProposalGenerator {
@@ -306,11 +307,11 @@ impl ProposalGenerator {
             max_failed_authors_to_store,
             pipeline_backpressure_config,
             chain_health_backoff_config,
-            last_round_generated: Mutex::new(0),
             quorum_store_enabled,
             vtxn_config,
             allow_batches_without_pos_in_proposal,
             opt_qs_payload_param_provider,
+            last_proposed_proposal: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -347,18 +348,61 @@ impl ProposalGenerator {
     /// error.
     pub async fn generate_proposal(
         &self,
+        epoch: u64,
         round: Round,
         proposer_election: Arc<dyn ProposerElection + Send + Sync>,
         wait_callback: BoxFuture<'static, ()>,
-    ) -> anyhow::Result<BlockData> {
-        {
-            let mut last_round_generated = self.last_round_generated.lock();
-            if *last_round_generated < round {
-                *last_round_generated = round;
-            } else {
-                bail!("Already proposed in the round {}", round);
+        is_opt: bool,
+    ) -> anyhow::Result<Option<BlockData>> {
+        if let Some((proposed_block, proposed_opt)) = &mut *self.last_proposed_proposal.lock() {
+            if round < proposed_block.round() {
+                return Err(format_err!(
+                    "OldRound: requested round {} is less than last proposed round {}",
+                    round,
+                    proposed_block.round()
+                ));
             }
-        }
+            if round == proposed_block.round() {
+                if is_opt || !*proposed_opt {
+                    return Ok(None);
+                }
+                // only allow one case for repropose: proposed opt, and now repropose regular
+                let hqc = self.ensure_highest_quorum_cert(round)?.as_ref().clone();
+                let failed_authors = self.compute_failed_authors(
+                    round,
+                    hqc.certified_block().round(),
+                    false,
+                    proposer_election,
+                );
+                let block_data = if self.vtxn_config.enabled() {
+                    BlockData::new_proposal_ext(
+                        proposed_block.validator_txns().cloned().unwrap(),
+                        proposed_block.payload().cloned().unwrap(),
+                        self.author,
+                        failed_authors,
+                        epoch,
+                        round,
+                        proposed_block.timestamp_usecs(),
+                        hqc,
+                    )
+                } else {
+                    BlockData::new_proposal(
+                        proposed_block.payload().cloned().unwrap(),
+                        self.author,
+                        failed_authors,
+                        epoch,
+                        round,
+                        proposed_block.timestamp_usecs(),
+                        hqc,
+                    )
+                };
+                *proposed_block = block_data.clone();
+                *proposed_opt = is_opt;
+
+                return Ok(Some(block_data));
+            }
+        };
+
         let maybe_optqs_payload_pull_params = self.opt_qs_payload_param_provider.get_params();
 
         let hqc = self.ensure_highest_quorum_cert(round)?;
@@ -485,13 +529,19 @@ impl ProposalGenerator {
             (validator_txns, payload, timestamp.as_micros() as u64)
         };
 
-        let quorum_cert = hqc.as_ref().clone();
-        let failed_authors = self.compute_failed_authors(
-            round,
-            quorum_cert.certified_block().round(),
-            false,
-            proposer_election,
-        );
+        let (quorum_cert, failed_authors) = match is_opt {
+            true => (QuorumCert::empty(), vec![]),
+            false => {
+                let hqc = hqc.as_ref().clone();
+                let failed_authors = self.compute_failed_authors(
+                    round,
+                    hqc.certified_block().round(),
+                    false,
+                    proposer_election,
+                );
+                (hqc, failed_authors)
+            },
+        };
 
         let block = if self.vtxn_config.enabled() {
             BlockData::new_proposal_ext(
@@ -499,6 +549,7 @@ impl ProposalGenerator {
                 payload,
                 self.author,
                 failed_authors,
+                epoch,
                 round,
                 timestamp,
                 quorum_cert,
@@ -508,13 +559,16 @@ impl ProposalGenerator {
                 payload,
                 self.author,
                 failed_authors,
+                epoch,
                 round,
                 timestamp,
                 quorum_cert,
             )
         };
 
-        Ok(block)
+        self.last_proposed_proposal.lock().replace((block.clone(), is_opt));
+
+        Ok(Some(block))
     }
 
     async fn calculate_max_block_sizes(

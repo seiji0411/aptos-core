@@ -97,6 +97,20 @@ pub struct BlockData {
 }
 
 impl BlockData {
+    pub fn set_quorum_cert(&mut self, qc: QuorumCert) {
+        self.quorum_cert = qc;
+    }
+
+    pub fn set_failed_authors(&mut self, fa: Vec<(Round, Author)>) {
+        match &mut self.block_type {
+            BlockType::Proposal { failed_authors, .. }
+            | BlockType::NilBlock { failed_authors, .. }
+            | BlockType::DAGBlock { failed_authors, .. } => *failed_authors = fa,
+            BlockType::ProposalExt(p) => p.set_failed_authors(fa),
+            BlockType::Genesis => (),
+        }
+    }
+
     pub fn author(&self) -> Option<Author> {
         match &self.block_type {
             BlockType::Proposal { author, .. } | BlockType::DAGBlock { author, .. } => {
@@ -313,12 +327,13 @@ impl BlockData {
         payload: Payload,
         author: Author,
         failed_authors: Vec<(Round, Author)>,
+        epoch: u64,
         round: Round,
         timestamp_usecs: u64,
         quorum_cert: QuorumCert,
     ) -> Self {
         Self {
-            epoch: quorum_cert.certified_block().epoch(),
+            epoch,
             round,
             timestamp_usecs,
             quorum_cert,
@@ -335,12 +350,13 @@ impl BlockData {
         payload: Payload,
         author: Author,
         failed_authors: Vec<(Round, Author)>,
+        epoch: u64,
         round: Round,
         timestamp_usecs: u64,
         quorum_cert: QuorumCert,
     ) -> Self {
         Self {
-            epoch: quorum_cert.certified_block().epoch(),
+            epoch,
             round,
             timestamp_usecs,
             quorum_cert,
