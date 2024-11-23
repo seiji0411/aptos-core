@@ -362,14 +362,15 @@ impl ProposalGenerator {
                 latest_proposed_round.unwrap_or(0)
             );
         }
-        self.proposed_proposals.retain(|r, _| *r < round);
-        match self.proposed_proposals.entry(round) {
+        let ret = match self.proposed_proposals.entry(round) {
             dashmap::mapref::entry::Entry::Occupied(mut entry) => {
                 let (proposed_block, proposed_opt) = entry.get();
                 if is_opt || !*proposed_opt {
                     return Ok(None);
                 }
+                warn!("[OptProposal] proposed round {} block: {:?}", round, proposed_block);
                 // only allow one case for repropose: proposed opt, and now repropose regular
+                assert!(*proposed_opt && !is_opt);
                 let hqc = self.ensure_highest_quorum_cert(round)?.as_ref().clone();
                 let failed_authors = self.compute_failed_authors(
                     round,
@@ -571,7 +572,9 @@ impl ProposalGenerator {
 
                 Ok(Some(block))
             },
-        }
+        };
+        self.proposed_proposals.retain(|r, _| *r < round);
+        ret
     }
 
     async fn calculate_max_block_sizes(
