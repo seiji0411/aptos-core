@@ -15,7 +15,7 @@ use crate::{
         proposal_generator::ProposalGenerator,
         proposal_status_tracker::TPastProposalStatusTracker,
         proposer_election::ProposerElection,
-        round_state::{NewRoundEvent, NewRoundReason, RoundState, RoundStateLogSchema},
+        round_state::{self, NewRoundEvent, NewRoundReason, RoundState, RoundStateLogSchema},
         unequivocal_proposer_election::UnequivocalProposerElection,
     },
     logging::{LogEvent, LogSchema},
