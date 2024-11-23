@@ -573,7 +573,7 @@ impl ProposalGenerator {
                 Ok(Some(block))
             },
         };
-        self.proposed_proposals.retain(|r, _| *r < round);
+        self.proposed_proposals.retain(|r, _| *r >= round);
         ret
     }
 
