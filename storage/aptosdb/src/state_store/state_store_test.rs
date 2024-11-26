@@ -466,7 +466,7 @@ proptest! {
 
     #[test]
     fn test_get_rightmost_leaf_with_sharding(
-        (input, batch1_size) in hash_map(any::<StateKey>(), any::<StateValue>(), 2..1000)
+        (input, batch1_size) in hash_map(any::<StateKey>(), any::<StateValue>(), 3..1000)
         .prop_flat_map(|input| {
             let len = input.len();
             (Just(input), 2..len)
