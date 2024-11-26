@@ -307,8 +307,9 @@ impl TransactionsApi {
 
     /// Get account transactions
     ///
-    /// Retrieves on-chain committed transactions from an account. If the start
-    /// version is too far in the past, a 410 will be returned.
+    /// Retrieves on-chain committed sequence-number based transactions from an account. 
+    /// Does not retrieve orderless transactions sent from the account.
+    /// If the start version is too far in the past, a 410 will be returned.
     ///
     /// If no start version is given, it will start at version 0.
     ///
@@ -342,8 +343,65 @@ impl TransactionsApi {
             self.context.max_transactions_page_size(),
         );
         let api = self.clone();
-        api_spawn_blocking(move || api.list_by_account(&accept_type, page, address.0)).await
+        api_spawn_blocking(move || api.list_seq_num_based_txns_by_account(&accept_type, page, address.0)).await
     }
+
+    /// Get account transaction summaries
+    ///
+    /// Retrieves on-chain committed transactions (both sequence number based 
+    /// and orderless transactions) from an account.
+    /// If the start version is too far in the past, a 410 will be returned.
+    ///
+    /// If no start version is given, it will start at version 0.
+    ///
+    /// To retrieve a pending transaction, use /transactions/by_hash.
+    #[oai(
+        path = "/accounts/:address/transaction_summaries",
+        method = "get",
+        operation_id = "get_account_transaction_summaries",
+        tag = "ApiTags::Transactions"
+    )]
+    // Question: Do you prefer "/accounts/:address/transactions_v2" instead?
+    // Question: Should the API return the entire transaction or just a summary?
+    // Question: Should the API return only user transactions, or all transaction types?
+    async fn get_accounts_transaction_summaries(
+        &self,
+        accept_type: AcceptType,
+        /// Address of account with or without a `0x` prefix
+        address: Path<Address>,
+        /// Transaction version to start list of transactions
+        ///
+        /// If not provided, defaults to showing the latest transactions
+        start_version: Query<Option<U64>>,
+        /// Transaction version to end list of transactions
+        ///
+        /// If not provided, defaults to showing the latest transactions
+        end_version: Query<Option<U64>>,
+        /// Block timestamp in milliseconds since UNIX_EPOCH to start list of transactions
+        ///
+        /// If not provided, defaults to showing the latest transactions
+        start_chain_timestamp: Query<Option<U64>>,
+        /// Block timestamp in milliseconds since UNIX_EPOCHto end list of transactions
+        ///
+        /// If not provided, defaults to showing the latest transactions
+        end_chain_timestamp: Query<Option<U64>>,
+        /// Max number of transactions to retrieve.
+        ///
+        /// If not provided, defaults to default page size
+        limit: Query<Option<u16>>,
+    ) -> BasicResultWith404<Vec<Transaction>> {
+        fail_point_poem("endpoint_get_accounts_transaction_summaries")?;
+        self.context
+            .check_api_output_enabled("Get account transaction summaries", &accept_type)?;
+        let page = Page::new(
+            start_version.0.map(|v| v.0),
+            limit.0,
+            self.context.max_transactions_page_size(),
+        );
+        let api = self.clone();
+        api_spawn_blocking(move || api.list_all_txns_by_account(&accept_type, page, address.0)).await
+    }
+
 
     /// Submit transaction
     ///
@@ -1003,8 +1061,42 @@ impl TransactionsApi {
         )
     }
 
+    /// List sequence number based transactions for an account
+    fn list_seq_num_based_txns_by_account(
+        &self,
+        accept_type: &AcceptType,
+        page: Page,
+        address: Address,
+    ) -> BasicResultWith404<Vec<Transaction>> {
+        // Verify the account exists
+        let account = Account::new(self.context.clone(), address, None, None, None)?;
+        account.get_account_resource()?;
+
+        let latest_ledger_info = account.latest_ledger_info;
+        // TODO: Return more specific errors from within this function.
+        let data = self.context.get_account_transactions(
+            address.into(),
+            page.start_option(),
+            page.limit(&latest_ledger_info)?,
+            account.ledger_version,
+            &latest_ledger_info,
+        )?;
+        match accept_type {
+            AcceptType::Json => BasicResponse::try_from_json((
+                self.context
+                    .render_transactions_non_sequential(&latest_ledger_info, data)?,
+                &latest_ledger_info,
+                BasicResponseStatus::Ok,
+            )),
+            AcceptType::Bcs => {
+                BasicResponse::try_from_bcs((data, &latest_ledger_info, BasicResponseStatus::Ok))
+            },
+        }
+    }
+
+
     /// List all transactions for an account
-    fn list_by_account(
+    fn list_all_txns_by_account(
         &self,
         accept_type: &AcceptType,
         page: Page,
