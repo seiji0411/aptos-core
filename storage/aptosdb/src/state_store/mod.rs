@@ -4,6 +4,11 @@
 
 //! This file defines state store APIs that are related account state Merkle tree.
 
+// FIXME(aldenhu)
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use crate::{
     ledger_db::LedgerDb,
     metrics::{OTHER_TIMERS_SECONDS, STATE_ITEMS, TOTAL_STATE_BYTES},
@@ -109,6 +114,15 @@ pub(crate) struct CurrentState(#[deref] Arc<Mutex<StateDelta>>);
 impl CurrentState {
     pub fn new(from_latest_checkpoint_to_current: StateDelta) -> Self {
         Self(Arc::new(Mutex::new(from_latest_checkpoint_to_current)))
+    }
+
+    pub fn next_version(&self) -> Version {
+        // FIXME(aldenhu)
+        todo!()
+    }
+
+    pub fn version(&self) -> Option<Version> {
+        self.next_version().checked_sub(1)
     }
 }
 
@@ -463,6 +477,7 @@ impl StateStore {
         state_merkle_db: Arc<StateMerkleDb>,
         state_kv_db: Arc<StateKvDb>,
     ) -> Result<Option<Version>> {
+        /*
         use aptos_config::config::NO_OP_STORAGE_PRUNER_CONFIG;
 
         let state_merkle_pruner = StateMerklePrunerManager::new(
@@ -492,6 +507,9 @@ impl StateStore {
         )?;
         let base_version = current_state.lock().base_version;
         Ok(base_version)
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 
     fn create_buffered_state_from_latest_snapshot(
@@ -500,6 +518,7 @@ impl StateStore {
         hack_for_tests: bool,
         check_max_versions_after_snapshot: bool,
     ) -> Result<(BufferedState, SmtAncestors<StateValue>, CurrentState)> {
+        /*
         let num_transactions = state_db
             .ledger_db
             .metadata_db()
@@ -621,6 +640,9 @@ impl StateStore {
             );
         }
         Ok((buffered_state, smt_ancestors, current_state))
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 
     pub fn reset(&self) {

@@ -3,6 +3,11 @@
 
 //! This file defines state store buffered state that has been committed.
 
+// FIXME(aldenhu)
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use crate::{
     metrics::{LATEST_CHECKPOINT_VERSION, OTHER_TIMERS_SECONDS},
     state_store::{state_snapshot_committer::StateSnapshotCommitter, CurrentState, StateDb},
@@ -55,10 +60,11 @@ pub(crate) enum CommitMessage<T> {
 
 impl BufferedState {
     pub(crate) fn new(
-        state_db: &Arc<StateDb>,
-        state_after_checkpoint: StateDelta,
-        target_items: usize,
+        _state_db: &Arc<StateDb>,
+        _state_after_checkpoint: StateDelta,
+        _target_items: usize,
     ) -> (Self, SmtAncestors<StateValue>, CurrentState) {
+        /*
         let (state_commit_sender, state_commit_receiver) =
             mpsc::sync_channel(ASYNC_COMMIT_CHANNEL_BUFFER_SIZE as usize);
         let arc_state_db = Arc::clone(state_db);
@@ -87,12 +93,16 @@ impl BufferedState {
         };
         myself.report_latest_committed_version();
         (myself, smt_ancestors, current_state)
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 
     /// This method checks whether a commit is needed based on the target_items value and the number of items in state_until_checkpoint.
     /// If a commit is needed, it sends a CommitMessage::Data message to the StateSnapshotCommitter thread to commit the data.
     /// If sync_commit is true, it also sends a CommitMessage::Sync message to ensure that the commit is completed before returning.
     fn maybe_commit(&mut self, sync_commit: bool) {
+        /*
         if sync_commit {
             let (commit_sync_sender, commit_sync_receiver) = mpsc::channel();
             if let Some(to_commit) = self.state_until_checkpoint.take().map(Arc::from) {
@@ -135,6 +145,9 @@ impl BufferedState {
                     .unwrap();
             }
         }
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 
     pub(crate) fn sync_commit(&mut self) {
@@ -142,12 +155,16 @@ impl BufferedState {
     }
 
     fn report_latest_committed_version(&self) {
+        /*
         LATEST_CHECKPOINT_VERSION.set(
             self.state_after_checkpoint
                 .lock()
                 .base_version
                 .map_or(-1, |v| v as i64),
         );
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 
     /// This method updates the buffered state with new data.
@@ -157,6 +174,7 @@ impl BufferedState {
         new_state_after_checkpoint: &StateDelta,
         sync_commit: bool,
     ) -> Result<()> {
+        /*
         {
             let _timer = OTHER_TIMERS_SECONDS.timer_with(&["update_current_state"]);
             let mut state_after_checkpoint = self.state_after_checkpoint.lock();
@@ -204,6 +222,9 @@ impl BufferedState {
         self.maybe_commit(sync_commit);
         self.report_latest_committed_version();
         Ok(())
+        FIXME(aldenhu)
+         */
+        todo!()
     }
 }
 
