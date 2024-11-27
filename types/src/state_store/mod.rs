@@ -12,9 +12,9 @@ use crate::{
 use aptos_crypto::HashValue;
 use bytes::Bytes;
 use move_core_types::move_resource::MoveResource;
+use std::ops::Deref;
 #[cfg(any(test, feature = "testing"))]
-use std::hash::Hash;
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, hash::Hash};
 
 pub mod errors;
 pub mod state_key;
