@@ -27,6 +27,7 @@ use futures_util::{future::AbortHandle, FutureExt, StreamExt};
 use move_core_types::account_address::AccountAddress;
 use rand::{prelude::StdRng, thread_rng, SeedableRng};
 use std::{sync::Arc, time::Duration};
+use aptos_event_notifications::EventNotification;
 
 #[derive(Clone, Debug)]
 enum InnerState {
@@ -117,7 +118,7 @@ impl<DKG: DKGTrait> DKGManager<DKG> {
     pub async fn run(
         mut self,
         in_progress_session: Option<DKGSessionState>,
-        mut dkg_start_event_rx: aptos_channel::Receiver<(), DKGStartEvent>,
+        mut dkg_start_event_rx: aptos_channel::Receiver<(), EventNotification>,
         mut rpc_msg_rx: aptos_channel::Receiver<
             AccountAddress,
             (AccountAddress, IncomingRpcRequest),
@@ -161,8 +162,8 @@ impl<DKG: DKGTrait> DKGManager<DKG> {
         let mut close_rx = close_rx.into_stream();
         while !self.stopped {
             let handling_result = tokio::select! {
-                dkg_start_event = dkg_start_event_rx.select_next_some() => {
-                    self.process_dkg_start_event(dkg_start_event)
+                notification = dkg_start_event_rx.select_next_some() => {
+                    self.process_dkg_start_event(notification)
                         .await
                         .map_err(|e|anyhow!("[DKG] process_dkg_start_event failed: {e}"))
                 },
@@ -420,7 +421,13 @@ impl<DKG: DKGTrait> DKGManager<DKG> {
         Ok(())
     }
 
-    async fn process_dkg_start_event(&mut self, event: DKGStartEvent) -> Result<()> {
+    async fn process_dkg_start_event(&mut self, notification: EventNotification) -> Result<()> {
+        let EventNotification { version, subscribed_events } = notification;
+        debug!(version = version, "process_dkg_start_event begins");
+        //TODO: read session data from state view at version, instead of rely on event content.
+
+        let raw_event= subscribed_events.first().ok_or_else(||anyhow!("process_dkg_start_event failed with empty notification"))?;
+        let event = DKGStartEvent::try_from(raw_event).map_err(|e|anyhow!("process_dkg_start_event failed with raw event conversion error: {e}"))?;
         info!(
             epoch = self.epoch_state.epoch,
             my_addr = self.my_addr,
@@ -437,13 +444,12 @@ impl<DKG: DKGTrait> DKGManager<DKG> {
         );
         if self.epoch_state.epoch != session_metadata.dealer_epoch {
             warn!(
-                "[DKG] event (from epoch {}) not for current epoch ({}), ignoring",
-                session_metadata.dealer_epoch, self.epoch_state.epoch
-            );
+            "[DKG] event (from epoch {}) not for current epoch ({}), ignoring",
+            session_metadata.dealer_epoch, self.epoch_state.epoch
+        );
             return Ok(());
         }
-        self.setup_deal_broadcast(start_time_us, &session_metadata)
-            .await
+        self.setup_deal_broadcast(start_time_us, &session_metadata).await
     }
 
     /// Process an RPC request from DKG peers.

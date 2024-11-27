@@ -48,7 +48,7 @@ pub struct EpochManager<P: OnChainConfigProvider> {
     dkg_rpc_msg_tx:
         Option<aptos_channel::Sender<AccountAddress, (AccountAddress, IncomingRpcRequest)>>,
     dkg_manager_close_tx: Option<oneshot::Sender<oneshot::Sender<()>>>,
-    dkg_start_event_tx: Option<aptos_channel::Sender<(), DKGStartEvent>>,
+    dkg_start_event_tx: Option<aptos_channel::Sender<(), EventNotification>>,
     vtxn_pool: VTxnPoolState,
 
     // Network utils
@@ -107,17 +107,18 @@ impl<P: OnChainConfigProvider> EpochManager<P> {
 
     fn on_dkg_start_notification(&mut self, notification: EventNotification) -> Result<()> {
         if let Some(tx) = self.dkg_start_event_tx.as_ref() {
-            let EventNotification {
-                subscribed_events, ..
-            } = notification;
-            for event in subscribed_events {
-                if let Ok(dkg_start_event) = DKGStartEvent::try_from(&event) {
-                    let _ = tx.push((), dkg_start_event);
-                    return Ok(());
-                } else {
-                    debug!("[DKG] on_dkg_start_notification: failed in converting a contract event to a dkg start event!");
-                }
-            }
+            let _ = tx.push((), notification);
+            // let EventNotification {
+            //     version, subscribed_events
+            // } = notification;
+            // for event in subscribed_events {
+            //     if let Ok(dkg_start_event) = DKGStartEvent::try_from(&event) {
+            //         let _ = tx.push((), (version, dkg_start_event));
+            //         return Ok(());
+            //     } else {
+            //         debug!("[DKG] on_dkg_start_notification: failed in converting a contract event to a dkg start event!");
+            //     }
+            // }
         }
         Ok(())
     }
