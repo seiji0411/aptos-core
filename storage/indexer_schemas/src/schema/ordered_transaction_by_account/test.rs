@@ -13,8 +13,8 @@ proptest! {
         seq_num in any::<u64>(),
         version in any::<Version>(),
     ) {
-        assert_encode_decode::<TransactionByAccountSchema>(&(address, seq_num), &version);
+        assert_encode_decode::<OrderedTransactionByAccountSchema>(&(address, seq_num), &version);
     }
 }
 
-test_no_panic_decoding!(TransactionByAccountSchema);
+test_no_panic_decoding!(OrderedTransactionByAccountSchema);

@@ -7,11 +7,11 @@
 //! can resort to `TransactionSchema` for the transaction content.
 //!
 //! ```text
-//! |<-------key------->|<-value->|
-//! | address | seq_num | txn_ver |
+//! |<-------key------->|<---value--->|
+//! | address | version | txn_summary |
 //! ```
 
-use crate::{schema::TRANSACTION_BY_ACCOUNT_CF_NAME, utils::ensure_slice_len_eq};
+use crate::{schema::TRANSACTION_SUMMARIES_BY_ACCOUNT_CF_NAME, utils::ensure_slice_len_eq};
 use anyhow::Result;
 use aptos_schemadb::{
     define_pub_schema,
@@ -22,21 +22,20 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::{convert::TryFrom, mem::size_of};
 
 define_pub_schema!(
-    TransactionByAccountSchema,
+    TransactionSummariesByAccountSchema,
     Key,
     Version,
-    TRANSACTION_BY_ACCOUNT_CF_NAME
+    TRANSACTION_SUMMARIES_BY_ACCOUNT_CF_NAME
 );
 
-type SeqNum = u64;
-type Key = (AccountAddress, SeqNum);
+type Key = (AccountAddress, Version);
 
-impl KeyCodec<TransactionByAccountSchema> for Key {
+impl KeyCodec<TransactionSummariesByAccountSchema> for Key {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        let (ref account_address, seq_num) = *self;
+        let (ref account_address, version) = *self;
 
         let mut encoded = account_address.to_vec();
-        encoded.write_u64::<BigEndian>(seq_num)?;
+        encoded.write_u64::<BigEndian>(version)?;
 
         Ok(encoded)
     }
@@ -45,13 +44,13 @@ impl KeyCodec<TransactionByAccountSchema> for Key {
         ensure_slice_len_eq(data, size_of::<Self>())?;
 
         let address = AccountAddress::try_from(&data[..AccountAddress::LENGTH])?;
-        let seq_num = (&data[AccountAddress::LENGTH..]).read_u64::<BigEndian>()?;
+        let version = (&data[AccountAddress::LENGTH..]).read_u64::<BigEndian>()?;
 
-        Ok((address, seq_num))
+        Ok((address, version))
     }
 }
 
-impl ValueCodec<TransactionByAccountSchema> for Version {
+impl ValueCodec<TransactionSummariesByAccountSchema> for Version {
     fn encode_value(&self) -> Result<Vec<u8>> {
         Ok(self.to_be_bytes().to_vec())
     }

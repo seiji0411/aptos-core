@@ -10,14 +10,23 @@ use crate::{
         state_value::StateValue,
         table::{TableHandle, TableInfo},
     },
-    transaction::{AccountTransactionsWithProof, Version},
+    transaction::{AccountTransactionsWithProof, ReplayProtector, Version},
 };
 use anyhow::Result;
+use aptos_crypto::HashValue;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum Order {
     Ascending,
     Descending,
+}
+
+// Question: Do we need any more information here? How about gas_used and block timestamp?
+pub struct IndexedTransactionSummary {
+    sender: AccountAddress,
+    replay_protector: ReplayProtector,
+    version: Version,
+    transaction_hash: HashValue,
 }
 
 pub trait IndexerReader: Send + Sync {
@@ -43,7 +52,7 @@ pub trait IndexerReader: Send + Sync {
         ledger_version: Version,
     ) -> Result<Vec<EventWithVersion>>;
 
-    fn get_account_transactions(
+    fn get_ordered_account_transactions(
         &self,
         address: AccountAddress,
         start_seq_num: u64,
@@ -51,6 +60,15 @@ pub trait IndexerReader: Send + Sync {
         include_events: bool,
         ledger_version: Version,
     ) -> Result<AccountTransactionsWithProof>;
+
+    fn get_all_account_transaction_summaries(
+        &self,
+        address: AccountAddress,
+        start_version: u64,
+        limit: u64,
+        include_events: bool,
+        ledger_version: Version,
+    ) -> Result<Vec<IndexedTransactionSummary>>;
 
     fn get_prefixed_state_value_iterator(
         &self,

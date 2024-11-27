@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 #[serde(default, deny_unknown_fields)]
 pub struct InternalIndexerDBConfig {
     pub enable_transaction: bool,
+    pub enable_transaction_summaries: bool,
     pub enable_event: bool,
     pub enable_statekeys: bool,
     pub batch_size: usize,
@@ -19,12 +20,14 @@ pub struct InternalIndexerDBConfig {
 impl InternalIndexerDBConfig {
     pub fn new(
         enable_transaction: bool,
+        enable_transaction_summaries: bool,
         enable_event: bool,
         enable_statekeys: bool,
         batch_size: usize,
     ) -> Self {
         Self {
             enable_transaction,
+            enable_transaction_summaries,
             enable_event,
             enable_statekeys,
             batch_size,
@@ -44,7 +47,7 @@ impl InternalIndexerDBConfig {
     }
 
     pub fn is_internal_indexer_db_enabled(&self) -> bool {
-        self.enable_transaction || self.enable_event || self.enable_statekeys
+        self.enable_transaction || self.enable_transaction_summaries || self.enable_event || self.enable_statekeys
     }
 
     pub fn batch_size(&self) -> usize {
@@ -56,6 +59,7 @@ impl Default for InternalIndexerDBConfig {
     fn default() -> Self {
         Self {
             enable_transaction: false,
+            enable_transaction_summaries: false,
             enable_event: false,
             enable_statekeys: false,
             batch_size: 10_000,

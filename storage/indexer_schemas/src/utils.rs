@@ -1,7 +1,7 @@
 // Copyright © Aptos Foundation
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::schema::transaction_by_account::TransactionByAccountSchema;
+use crate::schema::ordered_transaction_by_account::TransactionByAccountSchema;
 use aptos_schemadb::iterator::SchemaIterator;
 use aptos_storage_interface::{db_ensure as ensure, AptosDbError, Result};
 use aptos_types::{

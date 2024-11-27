@@ -307,11 +307,12 @@ pub trait DbReader: Send + Sync {
             ledger_version: Version,
         ) -> Result<Option<TransactionWithProof>>;
 
-        /// Returns the list of transactions sent by an account with `address` starting
+        /// Returns the list of ordered transactions (transactions that include a sequence number)
+        /// sent by an account with `address` starting
         /// at sequence number `seq_num`. Will return no more than `limit` transactions.
         /// Will ignore transactions with `txn.version > ledger_version`. Optionally
         /// fetch events for each transaction when `fetch_events` is `true`.
-        fn get_account_transactions(
+        fn get_ordered_account_transactions(
             &self,
             address: AccountAddress,
             seq_num: u64,

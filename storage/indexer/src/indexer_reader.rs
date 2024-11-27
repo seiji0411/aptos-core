@@ -7,7 +7,7 @@ use aptos_types::{
     account_address::AccountAddress,
     contract_event::EventWithVersion,
     event::EventKey,
-    indexer::indexer_db_reader::{IndexerReader, Order},
+    indexer::indexer_db_reader::{IndexedTransactionSummary, IndexerReader, Order},
     state_store::{
         state_key::{prefix::StateKeyPrefix, StateKey},
         state_value::StateValue,
@@ -113,7 +113,7 @@ impl IndexerReader for IndexerReaders {
         anyhow::bail!("DB indexer reader is not available")
     }
 
-    fn get_account_transactions(
+    fn get_ordered_account_transactions(
         &self,
         address: AccountAddress,
         start_seq_num: u64,
@@ -123,9 +123,37 @@ impl IndexerReader for IndexerReaders {
     ) -> anyhow::Result<AccountTransactionsWithProof> {
         if let Some(db_indexer_reader) = &self.db_indexer_reader {
             if db_indexer_reader.indexer_db.transaction_enabled() {
-                return Ok(db_indexer_reader.get_account_transactions(
+                return Ok(db_indexer_reader.get_ordered_account_transactions(
                     address,
                     start_seq_num,
+                    limit,
+                    include_events,
+                    ledger_version,
+                )?);
+            } else {
+                anyhow::bail!("Interal transaction by account index is not enabled")
+            }
+        }
+        anyhow::bail!("DB indexer reader is not available")
+    }
+
+    fn get_all_account_transaction_summaries(
+        &self,
+        address: AccountAddress,
+        // TODO: Give more elaborate marker: start_version, end_version, start_timestamp, end_timestamp
+        start_version: u64,
+        end_version: u64,
+        limit: u64,
+        include_events: bool,
+        ledger_version: Version,
+    ) -> anyhow::Result<Vec<IndexedTransactionSummary>> {
+        if let Some(db_indexer_reader) = &self.db_indexer_reader {
+            // TODO: May be we need a new config flag to enable this?
+            if db_indexer_reader.indexer_db.transaction_enabled() {
+                return Ok(db_indexer_reader.get_all_account_transaction_summaries(
+                    address,
+                    start_version,
+                    end_version,
                     limit,
                     include_events,
                     ledger_version,

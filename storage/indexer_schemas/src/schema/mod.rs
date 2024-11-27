@@ -11,7 +11,9 @@ pub mod event_by_version;
 pub mod indexer_metadata;
 pub mod state_keys;
 pub mod table_info;
-pub mod transaction_by_account;
+pub mod ordered_transaction_by_account;
+pub mod orderless_transaction_by_account;
+pub mod transaction_summaries_by_account;
 use aptos_schemadb::ColumnFamilyName;
 
 pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
@@ -20,7 +22,9 @@ pub const INTERNAL_INDEXER_METADATA_CF_NAME: ColumnFamilyName = "internal_indexe
 pub const TABLE_INFO_CF_NAME: ColumnFamilyName = "table_info";
 pub const EVENT_BY_KEY_CF_NAME: ColumnFamilyName = "event_by_key";
 pub const EVENT_BY_VERSION_CF_NAME: ColumnFamilyName = "event_by_version";
-pub const TRANSACTION_BY_ACCOUNT_CF_NAME: ColumnFamilyName = "transaction_by_account";
+pub const ORDERED_TRANSACTION_BY_ACCOUNT_CF_NAME: ColumnFamilyName = "transaction_by_account";
+pub const ORDERLESS_TRANSACTION_BY_ACCOUNT_CF_NAME: ColumnFamilyName = "orderless_transaction_by_account";
+pub const TRANSACTION_SUMMARIES_BY_ACCOUNT_CF_NAME: ColumnFamilyName = "transaction_summaries_by_account";
 pub const STATE_KEYS_CF_NAME: ColumnFamilyName = "state_keys";
 
 pub fn column_families() -> Vec<ColumnFamilyName> {
@@ -37,7 +41,9 @@ pub fn internal_indexer_column_families() -> Vec<ColumnFamilyName> {
         INTERNAL_INDEXER_METADATA_CF_NAME,
         EVENT_BY_KEY_CF_NAME,
         EVENT_BY_VERSION_CF_NAME,
-        TRANSACTION_BY_ACCOUNT_CF_NAME,
+        ORDERED_TRANSACTION_BY_ACCOUNT_CF_NAME,
+        ORDERLESS_TRANSACTION_BY_ACCOUNT_CF_NAME,
+        TRANSACTION_SUMMARIES_BY_ACCOUNT_CF_NAME,
         STATE_KEYS_CF_NAME,
     ]
 }

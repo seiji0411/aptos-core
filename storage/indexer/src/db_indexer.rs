@@ -8,7 +8,7 @@ use aptos_db_indexer_schemas::{
     schema::{
         event_by_key::EventByKeySchema, event_by_version::EventByVersionSchema,
         indexer_metadata::InternalIndexerMetadataSchema, state_keys::StateKeysSchema,
-        transaction_by_account::TransactionByAccountSchema,
+        ordered_transaction_by_account::TransactionByAccountSchema,
     },
     utils::{
         error_if_too_many_requested, get_first_seq_num_and_limit, AccountTransactionVersionIter,
@@ -23,12 +23,12 @@ use aptos_types::{
     account_address::AccountAddress,
     contract_event::{ContractEvent, EventWithVersion},
     event::EventKey,
-    indexer::indexer_db_reader::Order,
+    indexer::indexer_db_reader::{IndexedTransactionSummary, Order},
     state_store::{
         state_key::{prefix::StateKeyPrefix, StateKey},
         state_value::StateValue,
     },
-    transaction::{AccountTransactionsWithProof, Transaction, Version},
+    transaction::{AccountTransactionsWithProof, ReplayProtector, Transaction, Version},
     write_set::{TransactionWrite, WriteSet},
 };
 use std::{
@@ -172,6 +172,13 @@ impl InternalIndexerDB {
             ledger_version,
         ))
     }
+
+    pub fn get_account_transaction_summary_iter(
+        &self,
+        address: AccountAddress,
+        start_version: u64,
+        end_version: u64,
+    )
 
     pub fn get_latest_sequence_number(
         &self,
@@ -441,7 +448,7 @@ impl DBIndexer {
         Ok(version)
     }
 
-    pub fn get_account_transactions(
+    pub fn get_ordered_account_transactions(
         &self,
         address: AccountAddress,
         start_seq_num: u64,
@@ -467,6 +474,19 @@ impl DBIndexer {
             .collect::<Result<Vec<_>>>()?;
 
         Ok(AccountTransactionsWithProof::new(txns_with_proofs))
+    }
+
+    pub fn get_all_account_transaction_summaries(
+        &self,
+        address: AccountAddress,
+        start_version: u64,
+        end_version: u64,
+        limit: u64,
+        include_events: bool,
+        ledger_version: Version,
+    ) -> Result<Vec<IndexedTransactionSummary>> {
+        
+
     }
 
     pub fn get_prefixed_state_value_iterator(
