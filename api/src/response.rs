@@ -37,7 +37,7 @@ use move_core_types::{
 };
 use poem_openapi::{payload::Json, types::ToJSON, ResponseContent};
 use serde_json::Value;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 /// An enum representing the different types of outputs for APIs
 #[derive(ResponseContent)]
@@ -546,6 +546,7 @@ generate_error_response!(
     (500, Internal),
     (503, ServiceUnavailable)
 );
+
 pub type BasicResultWith404<T> = poem::Result<BasicResponse<T>, BasicErrorWith404>;
 
 // Just this one helper for a specific kind of 404.
